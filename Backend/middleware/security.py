@@ -29,7 +29,7 @@ def access_check(request: Request, db: Session = Depends(get_db)):
         parts = auth_header.split(" ")
         if len(parts) == 2 and parts[0].lower() == "bearer":
             token = parts[1]
-    print("Token:", token)
+    # print("Token:", token)
 
     if not token or not device_id:
         raise HTTPException(status_code=401, detail="Token or Device ID missing")
@@ -37,10 +37,10 @@ def access_check(request: Request, db: Session = Depends(get_db)):
     try:
         # Decode JWT
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("Decoded JWT:", decoded)
+        # print("Decoded JWT:", decoded)
     
         admin_id = decoded.get("id")
-        print("Admin ID from token:", admin_id)
+        # print("Admin ID from token:", admin_id)
 
         if not admin_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
@@ -65,7 +65,7 @@ def access_check(request: Request, db: Session = Depends(get_db)):
         {"id": admin_id}
         ).fetchone()
 
-        print("Admin Object:", admin_obj)
+        # print("Admin Object:", admin_obj)
 
         if not admin_obj:
             raise HTTPException(status_code=404, detail="Admin not found")
@@ -88,7 +88,7 @@ def access_check_for_admin(request: Request, db: Session = Depends(get_db)):
         parts = auth_header.split(" ")
         if len(parts) == 2 and parts[0].lower() == "bearer":
             token = parts[1]
-    print("Token:", token)
+    # print("Token:", token)
 
     if not token or not device_id:
         raise HTTPException(status_code=401, detail="Token or Device ID missing")
@@ -96,10 +96,10 @@ def access_check_for_admin(request: Request, db: Session = Depends(get_db)):
     try:
         # Decode JWT
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("Decoded JWT:", decoded)
+        # print("Decoded JWT:", decoded)
     
         admin_id = decoded.get("id")
-        print("Admin ID from token:", admin_id)
+        # print("Admin ID from token:", admin_id)
 
         if not admin_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")

@@ -43,20 +43,19 @@ contract = w3.eth.contract(address=contract_address, abi=abi)
 
 # ------------------ Encryption Key ------------------
 FERNET_KEY = os.getenv("FERNET_KEY")
-if not FERNET_KEY:
-    FERNET_KEY = Fernet.generate_key().decode()
 fernet = Fernet(FERNET_KEY.encode())
 
 # ------------------ Utility ------------------
 def encrypt_private_key(pk: str) -> str:
     return fernet.encrypt(pk.encode()).decode()
-
 def send_avax(to_address: str, amount_in_avax: float) -> str:
-    """Send AVAX from funding account"""
+    """Send AVAX from funding account and wait for confirmation"""
     try:
+        to_address = w3.to_checksum_address(to_address)
+        nonce = w3.eth.get_transaction_count(funding_account.address, 'pending')
         tx = {
-            "nonce": w3.eth.get_transaction_count(funding_account.address),
-            "to": w3.to_checksum_address(to_address),
+            "nonce": nonce,
+            "to": to_address,
             "value": w3.to_wei(amount_in_avax, "ether"),
             "gas": 21000,
             "gasPrice": w3.eth.gas_price,
@@ -64,9 +63,15 @@ def send_avax(to_address: str, amount_in_avax: float) -> str:
         }
         signed_tx = w3.eth.account.sign_transaction(tx, FUNDING_KEY)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+
+        # Wait for transaction to be mined
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        # print(f"AVAX sent: {amount_in_avax} to {to_address}, tx hash: {tx_hash.hex()}")
+
         return tx_hash.hex()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Funding transaction failed: {str(e)}")
+
 
 
 router = APIRouter()
@@ -277,19 +282,19 @@ async def create_admin(
 
 # superadmin get all candidates using state passing as query param
 
-@router.get("/super_admin/get-candidates/state/{state}")
-async def get_candidates_by_state(state: str, admin: SuperAdmin = Depends(access_check)):
-    try:
-        candidates = db.execute(
-            text("SELECT * FROM candidate WHERE admin_of_state = :state"),
-            {"state": state}
-        ).fetchall()
-        if not candidates:
-            return {"message": "No candidates found for the given state"}
-        return {
-            "message": "Candidates retrieved successfully",
-            "success": True,
-            "candidates": [dict(candidate) for candidate in candidates]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.get("/super_admin/get-candidates/state/{state}")
+# async def get_candidates_by_state(state: str, admin: SuperAdmin = Depends(access_check)):
+#     try:
+#         candidates = db.execute(
+#             text("SELECT * FROM candidate WHERE admin_of_state = :state"),
+#             {"state": state}
+#         ).fetchall()
+#         if not candidates:
+#             return {"message": "No candidates found for the given state"}
+#         return {
+#             "message": "Candidates retrieved successfully",
+#             "success": True,
+#             "candidates": [dict(candidate) for candidate in candidates]
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))

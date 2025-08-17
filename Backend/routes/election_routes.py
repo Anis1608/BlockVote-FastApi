@@ -10,17 +10,28 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+# Always use IST (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+router = APIRouter()
+
 def get_current_phase(reg_start: datetime, voting_date: datetime, result_date: datetime) -> str:
-    now = datetime.now(timezone.utc) 
+    if reg_start.tzinfo is None:
+        reg_start = reg_start.replace(tzinfo=IST)
+    if voting_date.tzinfo is None:
+        voting_date = voting_date.replace(tzinfo=IST)
+    if result_date.tzinfo is None:
+        result_date = result_date.replace(tzinfo=IST)
+
+    # Always compare in IST
+    now = datetime.now(IST)
+
     if reg_start <= now < voting_date:
         return "registration"
     elif voting_date <= now < result_date:
         return "voting"
     else:
         return "result"
-
-# Indian Standard Time (UTC+5:30)
-IST = timezone(timedelta(hours=5, minutes=30))
 
 def normalize_date(date_str: str) -> datetime:
     """
@@ -50,7 +61,6 @@ class ElectionCreate(BaseModel):
 
 
 
-router = APIRouter()
 
 @router.post("/super_admin/create-elections")
 async def create_election(
@@ -108,3 +118,93 @@ async def create_election(
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+
+
+# update election Details api endpoint here 
+
+# -------- Request Model --------
+class ElectionUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    election_state: str | None = None
+    registration_start_date: str | None = None
+    voting_date: str | None = None
+    result_published_date: str | None = None
+
+# -------- Update API --------
+@router.put("/super_admin/update-election/{election_id}")
+async def update_election(
+    election_id: int,
+    election: ElectionUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(access_check)
+):
+    try:
+        # Check if election exists
+        db_election = db.query(Elections).filter(Elections.election_id == election_id).first()
+        if not db_election:
+            raise HTTPException(status_code=404, detail="Election not found")
+
+        # Update fields only if provided
+        if election.title is not None:
+            db_election.title = election.title
+        if election.description is not None:
+            db_election.description = election.description
+        if election.election_state is not None:
+            db_election.election_state = election.election_state
+
+        # Dates (normalize if provided)
+        reg_start = db_election.registration_start_date
+        voting_date = db_election.voting_date
+        result_date = db_election.result_published_date
+
+        if election.registration_start_date:
+            reg_start = normalize_date(election.registration_start_date)
+            db_election.registration_start_date = reg_start
+        if election.voting_date:
+            voting_date = normalize_date(election.voting_date)
+            db_election.voting_date = voting_date
+        if election.result_published_date:
+            result_date = normalize_date(election.result_published_date)
+            db_election.result_published_date = result_date
+
+        # Rule checks
+        if voting_date <= reg_start:
+            raise HTTPException(
+                status_code=400,
+                detail="Voting date must be after registration start date"
+            )
+        if result_date <= voting_date:
+            raise HTTPException(
+                status_code=400,
+                detail="Result publish date must be after voting date"
+            )
+
+        # Recalculate current phase
+        db_election.current_phase = get_current_phase(reg_start, voting_date, result_date)
+
+        db.commit()
+        db.refresh(db_election)
+
+        return {
+            "success": True,
+            "message": "Election updated successfully",
+            "data": {
+                "election_id": db_election.election_id,
+                "title": db_election.title,
+                "state": db_election.election_state,
+                "registration_start_date": str(db_election.registration_start_date),
+                "voting_date": str(db_election.voting_date),
+                "result_published_date": str(db_election.result_published_date),
+                "current_phase": db_election.current_phase
+            }
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
+

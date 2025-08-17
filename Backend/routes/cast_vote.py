@@ -9,12 +9,10 @@ from sqlalchemy.orm import Session
 from database.db import get_db, redis_client  # your existing DB + Redis setup
 from middleware.security import access_check_for_admin  # admin auth
 
-# ----------------- Load environment -----------------
 load_dotenv()
 app = FastAPI()
 router = APIRouter()
 
-# Web3 / Smart Contract
 RPC_URL = os.getenv("AVAX_RPC")
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 chain_id = int(os.getenv("CHAIN_ID"))
@@ -31,34 +29,27 @@ fernet = Fernet(FERNET_KEY.encode())
 def decrypt_private_key(encrypted_pk: str) -> str:
     return fernet.decrypt(encrypted_pk.encode()).decode()
 
-# ----------------- Models -----------------
 class CastVoteRequest(BaseModel):
     voter_id: str
     candidate: str
 
-# ----------------- Helper: get safe nonce -----------------
 def get_safe_nonce(admin_wallet: str) -> int:
     """
     Atomically get a unique nonce for an admin wallet using Redis counter.
     """
     nonce_key = f"nonce:{admin_wallet}"
 
-    # Initialize nonce if it doesn't exist
     if not redis_client.exists(nonce_key):
         nonce_on_chain = w3.eth.get_transaction_count(admin_wallet, "pending")
         redis_client.set(nonce_key, nonce_on_chain)
 
-    # Atomically increment and subtract 1 to get correct nonce
     return redis_client.incr(nonce_key) - 1
 
-# ----------------- Background Task -----------------
 def process_vote(voter_id: str, candidate: str, encrypted_admin_key: str, admin_wallet: str):
     status_key = f"vote_status:{voter_id}"
     try:
         PRIVATE_KEY_ADMIN = decrypt_private_key(encrypted_admin_key)
         account = w3.eth.account.from_key(PRIVATE_KEY_ADMIN)
-
-        # Get a safe nonce using Redis atomic counter
         nonce = get_safe_nonce(admin_wallet)
 
         txn = contract.functions.castVote(voter_id, candidate).build_transaction({
@@ -73,7 +64,6 @@ def process_vote(voter_id: str, candidate: str, encrypted_admin_key: str, admin_
         tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
-        # Update Redis status with expiration (optional)
         redis_client.set(status_key, json.dumps({
             "status": "success",
             "tx_hash": tx_hash.hex(),
@@ -89,7 +79,6 @@ def process_vote(voter_id: str, candidate: str, encrypted_admin_key: str, admin_
         }))
         print(f"Error casting vote: {e}")
 
-# ----------------- API -----------------
 @router.post("/cast-vote")
 async def cast_vote(
     data: CastVoteRequest,
@@ -98,14 +87,11 @@ async def cast_vote(
     db: Session = Depends(get_db)
 ):
     try:
-        # Instant on-chain check if voter has already voted
         if contract.functions.hasVoted(data.voter_id).call():
             return {
                 "status": "failed",
                 "message": "Voter has already casted a vote."
             }
-
-        # Add vote processing as background task
         background_tasks.add_task(
             process_vote,
             data.voter_id,
@@ -113,8 +99,6 @@ async def cast_vote(
             admin_data["wallet_secret"],
             admin_data["wallet_address"]
         )
-
-        # Set initial status in Redis
         redis_client.set(f"vote_status:{data.voter_id}", json.dumps({"status": "queued"}))
 
         # Optional: log in DB
@@ -130,7 +114,6 @@ async def cast_vote(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# ----------------- API to check vote status -----------------
 @router.get("/vote-status/{voter_id}")
 async def vote_status(voter_id: str):
     status_key = f"vote_status:{voter_id}"
@@ -138,5 +121,3 @@ async def vote_status(voter_id: str):
     if not status:
         return {"status": "not_found", "message": "No vote found for this voter."}
     return json.loads(status)
-
-# ----------------- Mount router -----------------

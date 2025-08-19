@@ -39,6 +39,7 @@ with open("./deploy-contract/Voting_abi.json", "r") as f:
     abi = json.load(f)
 
 contract_address = os.getenv("SMART_CONTRACT_ADDRESS")
+print(f"Smart Contract Address: {contract_address}")
 contract = w3.eth.contract(address=contract_address, abi=abi)
 
 # ------------------ Encryption Key ------------------
@@ -227,7 +228,7 @@ async def create_admin(
         # Step 1: Generate a new wallet for the Admin
         new_acct = w3.eth.account.create()
         encrypted_pk = encrypt_private_key(new_acct.key.hex())  
-        tx_hash = send_avax(new_acct.address, 0.1)  # Fund wallet with AVAX
+        tx_hash = send_avax(new_acct.address, 0.3)  # Fund wallet with AVAX
 
         # Step 2: Hash password
         hashed_password = hash_password(admin_data.password)

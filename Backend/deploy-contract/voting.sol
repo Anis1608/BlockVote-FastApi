@@ -26,8 +26,11 @@ contract Voting {
 
     // Per-admin candidate list
     mapping(address => string[]) public candidateList;
+    // To avoid duplicates
+    mapping(address => mapping(string => bool)) public isCandidateRegistered;
 
     event AdminAdded(address indexed admin);
+    event CandidateRegistered(address indexed admin, string candidate);
     event VoteCast(address indexed admin, string voterId, string candidate);
 
     modifier onlySuperAdmin() {
@@ -50,16 +53,24 @@ contract Voting {
         emit AdminAdded(_admin);
     }
 
+    // Register candidate under the calling admin
+    function registerCandidate(string memory candidate) public onlyAdmin {
+        require(!isCandidateRegistered[msg.sender][candidate], "Candidate already registered");
+        
+        candidateList[msg.sender].push(candidate);
+        isCandidateRegistered[msg.sender][candidate] = true;
+
+        emit CandidateRegistered(msg.sender, candidate);
+    }
+
     function castVote(string memory voterId, string memory candidate) public onlyAdmin {
         require(!voters[msg.sender][voterId].hasVoted, "Voter already voted");
+        require(isCandidateRegistered[msg.sender][candidate], "Candidate not registered");
 
         // Record voter choice under this admin
         voters[msg.sender][voterId] = Voter(true, candidate);
 
         // Increment candidate vote count under this admin
-        if (candidateVotes[msg.sender][candidate] == 0) {
-            candidateList[msg.sender].push(candidate); // first vote for this candidate
-        }
         candidateVotes[msg.sender][candidate] += 1;
 
         emit VoteCast(msg.sender, voterId, candidate);
@@ -80,5 +91,21 @@ contract Voting {
 
     function getAllCandidates(address adminAddr) public view returns (string[] memory) {
         return candidateList[adminAddr];
+    }
+
+    // ✅ NEW FUNCTION: get candidates + votes (including zero votes)
+    function getCandidatesWithVotes(address adminAddr) 
+        public 
+        view 
+        returns (string[] memory, uint256[] memory) 
+    {
+        string[] memory candidates = candidateList[adminAddr];
+        uint256[] memory votes = new uint256[](candidates.length);
+
+        for (uint i = 0; i < candidates.length; i++) {
+            votes[i] = candidateVotes[adminAddr][candidates[i]];
+        }
+
+        return (candidates, votes);
     }
 }

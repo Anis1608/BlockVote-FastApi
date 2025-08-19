@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from sqlalchemy.orm import Session
+from web3 import Web3
 from database.db import get_db
 from middleware.security import access_check_for_admin
 from ua_parser import user_agent_parser
@@ -24,6 +25,30 @@ SESSTION_TTL = int(os.getenv("SESSION_TTL", 3600))  # Default to 1 hour
 # routes for admin login using otp 
 
 router = APIRouter()
+
+
+with open("./deploy-contract/Voting_abi.json", "r") as f:
+    abi = json.load(f)
+
+RPC = os.getenv("AVAX_RPC")  # Fuji RPC
+w3 = Web3(Web3.HTTPProvider(RPC))
+
+from cryptography.fernet import Fernet
+
+
+
+FUNDING_KEY = os.getenv("FUNDING_KEY")  # Private key of funding wallet
+
+# ------------------ Web3 Setup ------------------
+funding_account = w3.eth.account.from_key(FUNDING_KEY)
+
+contract_address = os.getenv("SMART_CONTRACT_ADDRESS")
+contract = w3.eth.contract(address=contract_address, abi=abi)
+
+FERNET_KEY = os.getenv("FERNET_KEY")
+fernet = Fernet(FERNET_KEY.encode())
+def decrypt_private_key(encrypted_pk: str) -> str:
+    return fernet.decrypt(encrypted_pk.encode()).decode()
 
 @router.post("/admin/admin-login-request")
 async def admin_login(
@@ -130,7 +155,6 @@ async def verify_admin_login_otp(
 
 
 # admin register candidates from his state only 
-
 @router.post("/admin/register-candidate")
 async def register_candidate(
     request: Request,
@@ -142,29 +166,30 @@ async def register_candidate(
     party_name: str = Body(..., description="Name of the political party the candidate represents"),
     candidate_city: str = Body(..., description="City the candidate is contesting from"),
     candidate_district: str = Body(..., description="District the candidate is contesting from"),
-    admin_data= Depends(access_check_for_admin),
+    admin_data=Depends(access_check_for_admin),
     db: Session = Depends(get_db)
 ):
-    if not name or not email or not aadhaar_number or not qualification or not candidate_age or not party_name  or not candidate_city or not candidate_district:
+    if not all([name, email, aadhaar_number, qualification, candidate_age, party_name, candidate_city, candidate_district]):
         raise HTTPException(status_code=400, detail="All fields are required")
 
     # Check if the candidate already exists
     existing_candidate = db.execute(
         text("SELECT * FROM candidate WHERE email = :email AND aadhaar_number = :aadhaar_number"),
-        {"email": email ,
-         "aadhaar_number": aadhaar_number}
+        {"email": email, "aadhaar_number": aadhaar_number}
     ).mappings().fetchone()
 
     if existing_candidate:
-        raise HTTPException(status_code=400, detail="Candidate with this aadhaar and email already exists")
-    
+        raise HTTPException(status_code=400, detail="Candidate with this Aadhaar and email already exists")
+
+    # Generate new candidate ID
     candidate_id = generateIdForCandidate()
 
     candidate_state = admin_data['admin_of_state']
     election_id = admin_data['election_id']
     admin_id = admin_data['admin_id']
+    admin_wallet = admin_data["wallet_address"]
 
-    # Create new candidate
+    # Candidate details for DB
     new_candidate = {
         "candidate_id": candidate_id,
         "admin_id": admin_id,
@@ -181,17 +206,52 @@ async def register_candidate(
         "state": candidate_state,
     }
 
-    db.execute(
-        text("INSERT INTO candidate (candidate_id , admin_id , name, email, aadhaar_number , qualification , candidate_age , party_name , candidate_state , candidate_city , candidate_district , election_id) VALUES (:candidate_id , :admin_id , :name, :email, :aadhaar_number , :qualification , :candidate_age , :party_name , :candidate_state , :candidate_city , :candidate_district , :election_id)"),
-        new_candidate
-    )
-    db.commit()
+    try:
+        # ✅ Save into DB
+        db.execute(
+            text("""
+                INSERT INTO candidate (
+                    candidate_id, admin_id, name, email, aadhaar_number, 
+                    qualification, candidate_age, party_name, candidate_state, 
+                    candidate_city, candidate_district, election_id
+                ) VALUES (
+                    :candidate_id, :admin_id, :name, :email, :aadhaar_number, 
+                    :qualification, :candidate_age, :party_name, :candidate_state, 
+                    :candidate_city, :candidate_district, :election_id
+                )
+            """),
+            new_candidate
+        )
+        db.commit()
 
-    return {
-        "message": "Candidate registered successfully",
-        "success": True
-    }
+        # ✅ Also register on blockchain
+        # Candidate identifier can be unique, e.g., "name|aadhaar|party"
+        candidate_identifier = candidate_id
 
+        nonce = w3.eth.get_transaction_count(admin_wallet)
+        txn = contract.functions.registerCandidate(candidate_identifier).build_transaction({
+            "from": admin_wallet,
+            "nonce": nonce,
+            "gas": 2000000,
+            "gasPrice": w3.to_wei("50", "gwei"),
+        })
+
+        # Sign and send transaction
+        signed_txn = w3.eth.account.sign_transaction(txn, private_key=decrypt_private_key(admin_data["wallet_secret"]))
+        tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return {
+            "message": "Candidate registered successfully",
+            "success": True,
+            "candidate_id": candidate_id,
+            "transaction_hash": tx_hash.hex(),
+            "blockchain_status": receipt.status
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error registering candidate: {str(e)}")
 
 @router.get("/admin/get-candidates")
 async def get_candidates(
@@ -212,6 +272,33 @@ async def get_candidates(
         "success": True,
         "candidates": [dict(candidate) for candidate in candidates]
     }
+
+
+
+@router.get("/results")
+async def get_results(admin_data=Depends(access_check_for_admin)):
+    try:
+        admin_wallet = admin_data["wallet_address"]
+        # print(contract.functions.getAllCandidates(admin_wallet).call())
+
+        # Call contract function: returns (candidate_ids[], votes[])
+        candidates, votes = contract.functions.getCandidatesWithVotes(admin_wallet).call()
+
+        results = []
+        for i in range(len(candidates)):
+            results.append({
+                "candidate_id": candidates[i],
+                "votes": votes[i]
+            })
+
+        return {
+            "status": "success",
+            "admin": admin_wallet,
+            "results": results
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
  
 

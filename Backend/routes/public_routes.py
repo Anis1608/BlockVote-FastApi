@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database.db import get_db
+from middleware.security import access_check_for_admin
 import json
 import os
 from web3 import Web3
@@ -38,8 +39,4 @@ async def get_candidates_by_state(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-
-
 

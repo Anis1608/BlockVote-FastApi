@@ -2,8 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database.db import get_db
+import json
+import os
+from web3 import Web3
 
 router = APIRouter()
+
+with open("./deploy-contract/Voting_abi.json", "r") as f:
+    abi = json.load(f)
+
+RPC = os.getenv("AVAX_RPC")  # Fuji RPC
+w3 = Web3(Web3.HTTPProvider(RPC))
+
+contract_address = os.getenv("SMART_CONTRACT_ADDRESS")
+contract = w3.eth.contract(address=contract_address, abi=abi)
+
 
 @router.get("/get-all/candidates")
 async def get_candidates_by_state(
@@ -25,3 +38,8 @@ async def get_candidates_by_state(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+

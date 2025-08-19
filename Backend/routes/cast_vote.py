@@ -9,6 +9,21 @@ from sqlalchemy.orm import Session
 from database.db import get_db, redis_client  # your existing DB + Redis setup
 from middleware.security import access_check_for_admin  # admin auth
 
+import hmac
+import hashlib
+import os
+
+
+
+SECRET_KEY_Private = os.getenv("SECRET_KEY")
+
+
+
+def hmac_private_key(pk: str) -> str:
+    return hmac.new(SECRET_KEY.encode(), pk.encode(), hashlib.sha256).hexdigest()
+
+
+
 load_dotenv()
 app = FastAPI()
 router = APIRouter()
@@ -28,6 +43,10 @@ FERNET_KEY = os.getenv("FERNET_KEY")
 fernet = Fernet(FERNET_KEY.encode())
 def decrypt_private_key(encrypted_pk: str) -> str:
     return fernet.decrypt(encrypted_pk.encode()).decode()
+
+def encrypt_private_key(pk: str) -> str:
+    return fernet.encrypt(pk.encode()).decode()
+
 
 class CastVoteRequest(BaseModel):
     voter_id: str
@@ -87,19 +106,26 @@ async def cast_vote(
     db: Session = Depends(get_db)
 ):
     try:
-        if contract.functions.hasVoted(data.voter_id).call():
+        print("Voter ID:", data.voter_id)
+        SECRET_KEY = os.getenv("SECRET_KEY")
+        SECRET_KEY_2 = admin_data["admin_id"]
+        combined_key = f"{SECRET_KEY}{SECRET_KEY_2}"
+        
+        pk = data.voter_id
+        encrypted_voter_id  = hmac.new(combined_key.encode(), pk.encode(), hashlib.sha256).hexdigest()
+        if contract.functions.hasVoted(encrypted_voter_id).call():
             return {
                 "status": "failed",
                 "message": "Voter has already casted a vote."
             }
         background_tasks.add_task(
             process_vote,
-            data.voter_id,
+            encrypted_voter_id,
             data.candidate,
             admin_data["wallet_secret"],
             admin_data["wallet_address"]
         )
-        redis_client.set(f"vote_status:{data.voter_id}", json.dumps({"status": "queued"}))
+        redis_client.set(f"vote_status:{encrypted_voter_id}", json.dumps({"status": "queued"}))
 
         # Optional: log in DB
         # db.execute("INSERT INTO votes (voter_id, candidate, status) VALUES (:v, :c, :s)",

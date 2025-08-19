@@ -13,11 +13,22 @@ contract Voting {
         string candidate;
     }
 
+    // Admins
     mapping(address => Admin) public admins;
-    mapping(string => Voter) public voters; // voterID => Voter
+
+    // Per-admin voters
+    mapping(address => mapping(string => Voter)) public voters; 
+    // voters[admin][voterId] => Voter
+
+    // Per-admin candidate votes
+    mapping(address => mapping(string => uint256)) public candidateVotes;
+    // candidateVotes[admin][candidate] => votes
+
+    // Per-admin candidate list
+    mapping(address => string[]) public candidateList;
 
     event AdminAdded(address indexed admin);
-    event VoteCast(string voterId, string candidate);
+    event VoteCast(address indexed admin, string voterId, string candidate);
 
     modifier onlySuperAdmin() {
         require(msg.sender == superAdmin, "Not super admin");
@@ -40,17 +51,34 @@ contract Voting {
     }
 
     function castVote(string memory voterId, string memory candidate) public onlyAdmin {
-        require(!voters[voterId].hasVoted, "Voter already voted");
-        voters[voterId] = Voter(true, candidate);
-        emit VoteCast(voterId, candidate);
+        require(!voters[msg.sender][voterId].hasVoted, "Voter already voted");
+
+        // Record voter choice under this admin
+        voters[msg.sender][voterId] = Voter(true, candidate);
+
+        // Increment candidate vote count under this admin
+        if (candidateVotes[msg.sender][candidate] == 0) {
+            candidateList[msg.sender].push(candidate); // first vote for this candidate
+        }
+        candidateVotes[msg.sender][candidate] += 1;
+
+        emit VoteCast(msg.sender, voterId, candidate);
     }
 
-    function hasVoted(string memory voterId) public view returns (bool) {
-        return voters[voterId].hasVoted;
+    function hasVoted(address adminAddr, string memory voterId) public view returns (bool) {
+        return voters[adminAddr][voterId].hasVoted;
     }
 
-    function getVote(string memory voterId) public view returns (string memory) {
-        require(voters[voterId].hasVoted, "No vote found");
-        return voters[voterId].candidate;
+    function getVote(address adminAddr, string memory voterId) public view returns (string memory) {
+        require(voters[adminAddr][voterId].hasVoted, "No vote found");
+        return voters[adminAddr][voterId].candidate;
+    }
+
+    function getCandidateVotes(address adminAddr, string memory candidate) public view returns (uint256) {
+        return candidateVotes[adminAddr][candidate];
+    }
+
+    function getAllCandidates(address adminAddr) public view returns (string[] memory) {
+        return candidateList[adminAddr];
     }
 }

@@ -17,7 +17,7 @@ chain_id = 43113  # Fuji Testnet
 account = w3.eth.account.from_key(PRIVATE_KEY)
 
 # Read contract
-with open("Voting.sol", "r") as file:
+with open("C:/Users/91970/Desktop/BlockVote/Backend/deploy-contract/voting.sol", "r") as file:
     voting_source = file.read()
 
 # Install compiler

@@ -123,7 +123,6 @@ async def create_election(
 
 # update election Details api endpoint here 
 
-# -------- Request Model --------
 class ElectionUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
@@ -132,7 +131,6 @@ class ElectionUpdate(BaseModel):
     voting_date: str | None = None
     result_published_date: str | None = None
 
-# -------- Update API --------
 @router.put("/super_admin/update-election/{election_id}")
 async def update_election(
     election_id: int,

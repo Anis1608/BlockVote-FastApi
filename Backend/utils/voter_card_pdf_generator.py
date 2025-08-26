@@ -3,17 +3,18 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
-import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
+from cryptography.fernet import Fernet
 from email import encoders
+from email.mime.text import MIMEText
+import os
 import qrcode
 import io
 import requests
-from cryptography.fernet import Fernet
+import smtplib
 import base64
 import hashlib
-import os
 import dotenv
 
 dotenv.load_dotenv()
@@ -162,32 +163,6 @@ def voter_card_generator(
     return pdf_buffer
 
 
-# ---------------- Example Usage ----------------
-
-# if __name__ == "__main__":
-#     # Generate random Voter ID each time (Example: BVID + 7 random digits)
-#     VOTER_ID = "VOT12345678910"
-    
-
-#     pdf_file = voter_card_generator(
-#         user_id=VOTER_ID,
-#         name="Anis Yasin Khan",
-#         father_name="Yasin Musthakim Khan",
-#         dob="01/06/1995",
-#         photo_url="https://res.cloudinary.com/yg123/image/upload/v1744563224/dp69mnqdjwxfnumxjyp5.jpg",
-#         signature_url="https://res.cloudinary.com/yg123/image/upload/v1755259253/signature-sample_ifpuix.jpg"
-#     )
-
-#     # Save file with name containing the Voter ID
-#     filename = f"voter-id-card-{VOTER_ID}.pdf"
-#     with open(filename, "wb") as f:
-#         f.write(pdf_file.read())
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-import smtplib
-import os
 
 def send_voter_card_email(voter_id: str, name: str, father_name: str, dob: str, photo_url: str, signature_url: str, email: str):
     EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
@@ -271,11 +246,11 @@ def send_voter_card_email(voter_id: str, name: str, father_name: str, dob: str, 
     print(f"✅ Voter card sent to {email}")
 
 send_voter_card_email(
-        voter_id="VOT12345AB",
+        voter_id="VOT12345AB234567",
         name="Anis Yasin Khan",
         father_name="Yasin Musthakim Khan",
         dob="01/06/1995",
         photo_url="https://res.cloudinary.com/yg123/image/upload/v1744563224/dp69mnqdjwxfnumxjyp5.jpg",
         signature_url="https://res.cloudinary.com/yg123/image/upload/v1755259253/signature-sample_ifpuix.jpg",
-        email="vhatti14@gmail.com")
+        email="ppal23819@gmail.com")
 

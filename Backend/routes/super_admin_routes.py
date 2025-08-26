@@ -10,6 +10,7 @@ from database.db import get_db
 from pydantic_models.Super_admin import SuperAdmin , SuperAdminLogin , SuperAdminCreatesAdmin
 from utils.id_generator import generateIdForAdmin
 from middleware.security import access_check
+from fastapi.responses import JSONResponse
 import jwt
 import os
 import time
@@ -25,12 +26,10 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 SESSTION_TTL = int(os.getenv("SESSION_TTL", 3600))  
 
-# BlockChain Configuration
-RPC = os.getenv("AVAX_RPC")  # Fuji RPC
-CHAIN_ID = int(os.getenv("CHAIN_ID", "43113"))  # Fuji chain ID
+RPC = os.getenv("AVAX_RPC") 
+CHAIN_ID = int(os.getenv("CHAIN_ID", "43113")) 
 FUNDING_KEY = os.getenv("FUNDING_KEY")  # Private key of funding wallet
 
-# ------------------ Web3 Setup ------------------
 w3 = Web3(Web3.HTTPProvider(RPC))
 funding_account = w3.eth.account.from_key(FUNDING_KEY)
 
@@ -42,11 +41,9 @@ contract_address = os.getenv("SMART_CONTRACT_ADDRESS")
 print(f"Smart Contract Address: {contract_address}")
 contract = w3.eth.contract(address=contract_address, abi=abi)
 
-# ------------------ Encryption Key ------------------
 FERNET_KEY = os.getenv("FERNET_KEY")
 fernet = Fernet(FERNET_KEY.encode())
 
-# ------------------ Utility ------------------
 def encrypt_private_key(pk: str) -> str:
     return fernet.encrypt(pk.encode()).decode()
 def send_avax(to_address: str, amount_in_avax: float) -> str:
@@ -112,8 +109,6 @@ async def register_super_admin(super_admin: SuperAdmin, db: Session = Depends(ge
             }
         )
         db.commit()
-
-
         return {"message": "Super admin registered successfully"}
 
     except Exception as e:
@@ -156,8 +151,6 @@ async def login_super_admin(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
 @router.post("/super_admin/verify-login-otp")
 async def verify_login_otp(
     request: Request,
@@ -168,17 +161,21 @@ async def verify_login_otp(
     if not email or not otp:
         raise HTTPException(status_code=400, detail="Email and OTP are required")
 
+    # Headers for device tracking
     user_agent = request.headers.get("user-agent")
     device_id = request.headers.get("device-id") or str(uuid4())
 
-    valid = verify_otp(f"login:{email}", otp , "login")
+    # Verify OTP
+    valid = verify_otp(f"login:{email}", otp, "login")
     if not valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
-    
+
+    # Get super_admin_id from Redis (temp store)
     admin_id = redis_client.get(f"temp:login:{email}")
     if not admin_id:
         raise HTTPException(status_code=400, detail="Session expired")
-    
+
+    # Validate admin in DB
     check_admin = db.execute(
         text("SELECT * FROM super_admin WHERE super_admin_id = :id"),
         {"id": admin_id}
@@ -187,33 +184,76 @@ async def verify_login_otp(
     if not check_admin:
         raise HTTPException(status_code=400, detail="Admin Not Found")
 
-    # Parse device info
+    # Device info (optional logging)
     parsed_info = user_agent_parser.Parse(user_agent)
     device_info = {
         "os": f"{parsed_info['os']['family']} {parsed_info['os']['major'] or ''}",
         "browser": f"{parsed_info['user_agent']['family']} {parsed_info['user_agent']['major'] or ''}",
         "platform": parsed_info["device"]["family"]
     }
+
+    # Create JWT
     payload = {
-    "id": check_admin.super_admin_id,
-    "iat": int(time.time())
-}
+        "id": check_admin.super_admin_id,
+        "iat": int(time.time())
+    }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
+    # Save session in Redis
     redis_key = f"session:{check_admin.super_admin_id}:{device_id}"
     redis_client.setex(redis_key, SESSTION_TTL, token)
-    redis_client.setex(f"device-info:{check_admin.super_admin_id}:{device_id}", 3600, json.dumps(device_info))
+    redis_client.setex(f"device-info:{check_admin.super_admin_id}:{device_id}", SESSTION_TTL, json.dumps(device_info))
 
+    # Cleanup OTP keys
     redis_client.delete(f"otp:login:{email}")
     redis_client.delete(f"temp:login:{email}")
 
-    return {
-        "message": "Admin Logged In Successfully!",
+    # ✅ Set cookies
+    response = JSONResponse({
+        "message": "SuperAdmin Logged In Successfully!",
         "Success": True,
-        "token": token,
-        "deviceId": device_id,
-        "deviceInfo": device_info,
+        "deviceInfo": device_info
+    })
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=True,       # set True in production (HTTPS required)
+        samesite="Strict",
+        max_age=SESSTION_TTL
+    )
+    response.set_cookie(
+        key="device_id",
+        value=device_id,
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        max_age=SESSTION_TTL
+    )
+
+    return response
+
+
+# get super admin 
+@router.get("/super_admin/get-details")
+async def get_super_admin(
+    admin: SuperAdmin = Depends(access_check),  # Ensure super admin is authenticated
+    db: Session = Depends(get_db)
+):
+    return {
+        "success": True,
+        "message": "Super Admin fetched successfully",
+        "data": {
+            "super_admin_id": admin.super_admin_id,
+            "email": admin.email,
+            "username": admin.username,
+            "created_at": admin.created_at,
+            "updated_at": admin.updated_at,
+        }
     }
+
+
+    
 
 
 # super admin creted admin with name email password and wallet address
@@ -272,6 +312,7 @@ async def create_admin(
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
         return {
+            "Success": True,
             "message": "Admin created successfully",
             "wallet_address": new_acct.address,
             "tx_hash": receipt.transactionHash.hex()
@@ -280,10 +321,8 @@ async def create_admin(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 # superadmin get all candidates using state passing as query parameter
-
-
 
 @router.get("/super_admin/candidates")
 async def get_candidates_by_state(
@@ -297,12 +336,12 @@ async def get_candidates_by_state(
         result = db.execute(query, {"state": state}).mappings().fetchall()
 
         if not result:
-            return {"success": True, "message": f"No candidates found in state {state}", "data": []}
+            return {"Success": True, "message": f"No candidates found in state {state}", "data": []}
 
         # Convert result to list of dicts
         candidates = [dict(row) for row in result]
 
-        return {"success": True, "message": "Candidates fetched successfully", "data": candidates}
+        return {"Success": True, "message": "Candidates fetched successfully", "data": candidates}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

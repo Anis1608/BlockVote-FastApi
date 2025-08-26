@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from database.db import redis_client
 from utils.otp_on_email import generate_otp, send_otp_email, verify_otp, store_otp_in_redis
 from utils.id_generator import generateIdForCandidate
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from uuid import uuid4
 import jwt
@@ -145,14 +146,49 @@ async def verify_admin_login_otp(
     redis_client.delete(f"otp:login:{email}")
     redis_client.delete(f"temp:login:{email}")
 
-    return {
-        "message": "Admin logged in successfully",
-        "success": True,
-        "token": token,
-        "device_id": device_id,
-        "adminId": admin_obj['admin_id']
-    }
+    response = JSONResponse({
+        "message": "Admin Logged In Successfully!",
+        "Success": True,
+        "deviceInfo": device_info
+    })
 
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=True,       # set True in production (HTTPS required)
+        samesite="Strict",
+        max_age=SESSTION_TTL
+    )
+    response.set_cookie(
+        key="device_id",
+        value=device_id,
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        max_age=SESSTION_TTL
+    )
+
+    return response
+
+
+@router.get("/admin/get-detials")
+async def get_admin_details(
+    admin_data=Depends(access_check_for_admin),
+    db: Session = Depends(get_db)
+):
+    return {
+        "message": "Admin details retrieved successfully",
+        "success": True,
+        "data":{
+            "adminId": admin_data.admin_id,
+            "adminName": admin_data.name,
+            "email": admin_data.email,
+            "adminOfState": admin_data.admin_of_state,
+            "created_at": admin_data.created_at,
+            "updated_at": admin_data.updated_at,
+        }
+    }
 
 # admin register candidates from his state only 
 @router.post("/admin/register-candidate")

@@ -311,7 +311,7 @@ async def get_candidates(
 
 
 
-@router.get("/results")
+@router.get("/admin/admin-results")
 async def get_results(admin_data=Depends(access_check_for_admin)):
     try:
         admin_wallet = admin_data["wallet_address"]

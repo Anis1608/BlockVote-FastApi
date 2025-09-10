@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useContext } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { SuperAdminAuthContext } from '@/context_api/SuperAdminAuthState';
 import { 
-  Settings, 
   User, 
   Shield, 
   Bell, 
@@ -27,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { superAdmin } = useContext(SuperAdminAuthContext);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -58,7 +57,7 @@ const SettingsPage = () => {
               <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
-                value={user?.email || ''}
+                value={superAdmin?.email || ''}
                 disabled
                 className="bg-muted/30"
               />
@@ -85,7 +84,7 @@ const SettingsPage = () => {
             <Input
               id="name"
               placeholder="Enter your full name"
-              defaultValue="System Administrator"
+              defaultValue={superAdmin?.name || 'System Administrator'}
             />
           </div>
           

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState , useContext , useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,79 +25,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SuperAdminDataContext } from '../context_api/SuperAdminDataState';
 
 const CandidateManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [stateFilter, setStateFilter] = useState('all');
+  const [stateFilter, setStateFilter] = useState('Maharashtra');
   const [partyFilter, setPartyFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const {getAllCandidates} = useContext(SuperAdminDataContext);
+  const [candidates, setCandidates] = useState([]);
 
-  const candidates = [
-    {
-      id: 1,
-      name: 'Dr. Rajesh Kumar',
-      age: 45,
-      qualification: 'PhD in Public Administration',
-      party: 'Bharatiya Janata Party',
-      constituency: 'Mumbai North',
-      state: 'Maharashtra',
-      city: 'Mumbai',
-      status: 'Approved',
-      electionType: 'Assembly',
-      experience: '12 years',
-      previousWins: 2,
-      manifesto: 'Infrastructure development and digital governance',
-      avatar: '/api/placeholder/60/60'
-    },
-    {
-      id: 2,
-      name: 'Smt. Priya Sharma',
-      age: 39,
-      qualification: 'MA Political Science',
-      party: 'Indian National Congress',
-      constituency: 'Pune Central',
-      state: 'Maharashtra',
-      city: 'Pune',
-      status: 'Under Review',
-      electionType: 'Assembly',
-      experience: '8 years',
-      previousWins: 1,
-      manifesto: 'Women empowerment and education reform',
-      avatar: '/api/placeholder/60/60'
-    },
-    {
-      id: 3,
-      name: 'Shri Amit Patel',
-      age: 52,
-      qualification: 'MBA, Former IAS Officer',
-      party: 'Aam Aadmi Party',
-      constituency: 'Ahmedabad East',
-      state: 'Gujarat',
-      city: 'Ahmedabad',
-      status: 'Approved',
-      electionType: 'Municipal',
-      experience: '15 years',
-      previousWins: 3,
-      manifesto: 'Anti-corruption and transparent governance',
-      avatar: '/api/placeholder/60/60'
-    },
-    {
-      id: 4,
-      name: 'Dr. Sunita Reddy',
-      age: 43,
-      qualification: 'MBBS, MD',
-      party: 'Telangana Rashtra Samithi',
-      constituency: 'Hyderabad Central',
-      state: 'Telangana',
-      city: 'Hyderabad',
-      status: 'Rejected',
-      electionType: 'Assembly',
-      experience: '6 years',
-      previousWins: 0,
-      manifesto: 'Healthcare reform and rural development',
-      avatar: '/api/placeholder/60/60'
-    }
-  ];
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      const allCandidates = await getAllCandidates();
+      setCandidates(allCandidates);
+    };
+
+    fetchCandidates();
+  }, [getAllCandidates]);
 
   const states = [
     'Maharashtra', 'Gujarat', 'Telangana', 'Karnataka', 'Tamil Nadu',
@@ -109,15 +54,21 @@ const CandidateManagement = () => {
     'Telangana Rashtra Samithi', 'All India Trinamool Congress', 'Samajwadi Party'
   ];
 
-  const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.constituency.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.party.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesState = stateFilter === 'all' || candidate.state === stateFilter;
-    const matchesParty = partyFilter === 'all' || candidate.party === partyFilter;
-    const matchesStatus = statusFilter === 'all' || candidate.status.toLowerCase() === statusFilter;
-    return matchesSearch && matchesState && matchesParty && matchesStatus;
-  });
+ const filteredCandidates = candidates.filter(candidate => {
+  const matchesSearch =
+    (candidate.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (candidate.candidate_state?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (candidate.party?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+
+  const matchesState =
+    stateFilter === "all" || (candidate.candidate_state?.toLowerCase() || "") === stateFilter.toLowerCase();
+  const matchesParty =
+    partyFilter === "all" || (candidate.party?.toLowerCase() || "") === partyFilter.toLowerCase();
+  const matchesStatus =
+    statusFilter === "all" || (candidate.status?.toLowerCase() || "") === statusFilter.toLowerCase();
+  return matchesSearch && matchesState && matchesParty && matchesStatus;
+});
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -129,13 +80,61 @@ const CandidateManagement = () => {
   };
 
   const getPartyColor = (party) => {
-    // Simple color mapping for major parties
     const colors = {
-      'Bharatiya Janata Party': 'bg-orange-100 text-orange-800',
-      'Indian National Congress': 'bg-blue-100 text-blue-800',
-      'Aam Aadmi Party': 'bg-cyan-100 text-cyan-800',
-      'Telangana Rashtra Samithi': 'bg-pink-100 text-pink-800'
-    };
+  'Bharatiya Janata Party': 'bg-orange-100 text-orange-800',
+  'BJP': 'bg-orange-100 text-orange-800',
+
+  'Indian National Congress': 'bg-blue-100 text-blue-800',
+  'INC': 'bg-blue-100 text-blue-800',
+
+  'Aam Aadmi Party': 'bg-cyan-100 text-cyan-800',
+  'AAP': 'bg-cyan-100 text-cyan-800',
+
+  'Telangana Rashtra Samithi': 'bg-pink-100 text-pink-800',
+  'Bharat Rashtra Samithi': 'bg-pink-100 text-pink-800',
+  'TRS': 'bg-pink-100 text-pink-800',
+  'BRS': 'bg-pink-100 text-pink-800',
+
+  'Samajwadi Party': 'bg-red-100 text-red-800',
+  'SP': 'bg-red-100 text-red-800',
+
+  'Bahujan Samaj Party': 'bg-indigo-100 text-indigo-800',
+  'BSP': 'bg-indigo-100 text-indigo-800',
+
+  'Shiv Sena': 'bg-yellow-100 text-yellow-800',
+  'SS': 'bg-yellow-100 text-yellow-800',
+
+  'Nationalist Congress Party': 'bg-green-100 text-green-800',
+  'NCP': 'bg-green-100 text-green-800',
+
+  'Rashtriya Janata Dal': 'bg-lime-100 text-lime-800',
+  'RJD': 'bg-lime-100 text-lime-800',
+
+  'Janata Dal (United)': 'bg-emerald-100 text-emerald-800',
+  'JDU': 'bg-emerald-100 text-emerald-800',
+  'JD(U)': 'bg-emerald-100 text-emerald-800',
+
+  'All India Trinamool Congress': 'bg-teal-100 text-teal-800',
+  'TMC': 'bg-teal-100 text-teal-800',
+  'AITC': 'bg-teal-100 text-teal-800',
+
+  'Communist Party of India (Marxist)': 'bg-red-200 text-red-900',
+  'CPI(M)': 'bg-red-200 text-red-900',
+
+  'Communist Party of India': 'bg-rose-100 text-rose-800',
+  'CPI': 'bg-rose-100 text-rose-800',
+
+  'Dravida Munnetra Kazhagam': 'bg-gray-200 text-gray-900',
+  'DMK': 'bg-gray-200 text-gray-900',
+
+  'All India Anna Dravida Munnetra Kazhagam': 'bg-gray-100 text-gray-800',
+  'AIADMK': 'bg-gray-100 text-gray-800',
+
+  'Janata Dal (Secular)': 'bg-green-200 text-green-900',
+  'JDS': 'bg-green-200 text-green-900',
+  'JD(S)': 'bg-green-200 text-green-900',
+};
+
     return colors[party] || 'bg-gray-100 text-gray-800';
   };
 
@@ -276,11 +275,11 @@ const CandidateManagement = () => {
       {/* Candidates Grid - Modified for side-by-side layout on larger screens */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {filteredCandidates.map((candidate) => (
-          <Card key={candidate.id} className="hover:shadow-lg transition-all h-full flex flex-col">
+          <Card key={candidate.candidate_id} className="hover:shadow-lg transition-all h-full flex flex-col">
             <CardHeader className="p-4 md:p-6">
               <div className="flex items-start gap-4">
                 <Avatar className="w-14 h-14 md:w-16 md:h-16">
-                  <AvatarImage src={candidate.avatar} alt={candidate.name} />
+                  <AvatarImage src={candidate.profile_picture} alt={candidate.name} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm md:text-lg">
                     {candidate.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
@@ -288,28 +287,28 @@ const CandidateManagement = () => {
                 
                 <div className="flex-1 min-w-0">
                   <CardTitle className="text-lg md:text-xl truncate">{candidate.name}</CardTitle>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge className={`${getStatusColor(candidate.status)} text-xs`}>
-                      {candidate.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {candidate.age} years • {candidate.qualification}
+                  <div className="flex items-center gap-2 mt-0.5">
+                     <Badge className={`${getStatusColor("Approved")} text-xs`}>
+                      {"Approved"}
+                    </Badge> 
+                   </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {candidate.candidate_age} years • {candidate.qualification}
                   </p>
                 </div>
               </div>
             </CardHeader>
             
-            <CardContent className="p-4 md:p-6 pt-0 flex-grow flex flex-col">
+            <CardContent className="p-5 md:p-6 pt-0 flex-grow flex flex-col">
               <div className="space-y-3 mb-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{candidate.constituency}, {candidate.city}</span>
+                  <span className="text-sm">{candidate.candidate_city} , {candidate.candidate_district} </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <Badge variant="outline" className={`${getPartyColor(candidate.party)} text-xs`}>
-                    {candidate.party}
+                  <Badge variant="outline" className={`${getPartyColor(candidate.party_name)} text-xs`}>
+                    {candidate.party_name}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">

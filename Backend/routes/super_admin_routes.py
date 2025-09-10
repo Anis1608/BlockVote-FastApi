@@ -326,22 +326,45 @@ async def create_admin(
 
 @router.get("/super_admin/candidates")
 async def get_candidates_by_state(
-    state: str = Query(..., description="State to filter candidates"),
     db: Session = Depends(get_db),
     admin=Depends(access_check)  # Only superadmin access
 ):
     try:
         # Fetch candidates for the given state
-        query = text("SELECT * FROM candidate WHERE candidate_state = :state")
-        result = db.execute(query, {"state": state}).mappings().fetchall()
+        query = text("SELECT * FROM candidate")
+        result = db.execute(query).mappings().fetchall()
 
         if not result:
-            return {"Success": True, "message": f"No candidates found in state {state}", "data": []}
+            return {"Success": True, "message": f"No candidates found", "data": []}
 
         # Convert result to list of dicts
         candidates = [dict(row) for row in result]
 
         return {"Success": True, "message": "Candidates fetched successfully", "data": candidates}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+# get all admins
+@router.get("/super_admin/all-admins")
+async def get_candidates_by_state(
+    db: Session = Depends(get_db),
+    admin=Depends(access_check)  # Only superadmin access
+):
+    try:
+        # Fetch candidates for the given state
+        query = text("SELECT  admin_id , name , email , profile_picture , admin_of_state FROM admin")
+        result = db.execute(query).mappings().fetchall()
+
+        if not result:
+            return {"Success": True, "message": f"No Admis found", "data": []}
+
+        # Convert result to list of dicts
+        admins = [dict(row) for row in result]
+
+        return {"Success": True, "message": "Candidates fetched successfully", "data": admins}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

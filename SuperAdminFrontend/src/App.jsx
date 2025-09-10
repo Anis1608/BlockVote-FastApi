@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SuperAdminAuthContext } from "./context_api/SuperAdminAuthState";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LoginPage } from "./components/auth/LoginPage";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
@@ -14,18 +14,17 @@ import CandidateManagement from "./pages/CandidateManagement";
 import ResultsDashboard from "./pages/ResultsDashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import SuperAdminAuthState from "./context_api/SuperAdminAuthState";
+import { useContext } from "react";
+import SuperAdminDataState from "./context_api/SuperAdminDataState";
 
 const queryClient = new QueryClient();
 
-// ✅ Protected Route wrapper with Outlet
+// ✅ Protected Route wrapper
 const ProtectedRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated } = useContext(SuperAdminAuthContext);
 
-  if (loading) {
-    return <div>Loading...</div>; // ya koi spinner
-  }
-
-  if (!isAuthenticated) {
+  if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
 
@@ -36,12 +35,11 @@ const ProtectedRoute = () => {
   );
 };
 
-
-// ✅ Public Route wrapper (redirects to dashboard if authenticated)
+// ✅ Public Route wrapper
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useContext(SuperAdminAuthContext);
 
-  if (isAuthenticated) {
+  if (isAuthenticated()) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -62,7 +60,7 @@ const AppContent = () => {
           }
         />
 
-        {/* ✅ Protected Routes with Nested Children */}
+        {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="admins" element={<AdminManagement />} />
@@ -84,15 +82,17 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppContent />
-        </TooltipProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <SuperAdminAuthState>
+      <SuperAdminDataState>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AppContent />
+          </TooltipProvider>
+        </ThemeProvider>
+      </SuperAdminDataState>
+    </SuperAdminAuthState>
   </QueryClientProvider>
 );
 

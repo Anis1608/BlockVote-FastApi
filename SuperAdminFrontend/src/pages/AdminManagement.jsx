@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState  , useContext , useEffect} from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,79 +24,41 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { use } from 'react';
+import { SuperAdminDataContext } from '../context_api/SuperAdminDataState';
 
 const AdminManagement = () => {
-    console.log('AdminManagement component rendered');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState('all');
 
-  const admins = [
-    {
-      id: 1,
-      name: 'Rajesh Kumar Sharma',
-      email: 'rajesh.sharma@blockvote.in',
-      phone: '+91 98765 43210',
-      state: 'Maharashtra',
-      city: 'Mumbai',
-      status: 'Active',
-      joinDate: '2024-01-15',
-      lastActive: '2 hours ago',
-      electionsManaged: 3,
-      avatar: '/api/placeholder/40/40'
-    },
-    {
-      id: 2,
-      name: 'Priya Patel',
-      email: 'priya.patel@blockvote.in',
-      phone: '+91 87654 32109',
-      state: 'Gujarat',
-      city: 'Ahmedabad',
-      status: 'Active',
-      joinDate: '2024-01-20',
-      lastActive: '1 day ago',
-      electionsManaged: 2,
-      avatar: '/api/placeholder/40/40'
-    },
-    {
-      id: 3,
-      name: 'Amit Singh',
-      email: 'amit.singh@blockvote.in',
-      phone: '+91 76543 21098',
-      state: 'Uttar Pradesh',
-      city: 'Lucknow',
-      status: 'Inactive',
-      joinDate: '2024-02-01',
-      lastActive: '1 week ago',
-      electionsManaged: 1,
-      avatar: '/api/placeholder/40/40'
-    },
-    {
-      id: 4,
-      name: 'Sunita Reddy',
-      email: 'sunita.reddy@blockvote.in',
-      phone: '+91 65432 10987',
-      state: 'Telangana',
-      city: 'Hyderabad',
-      status: 'Active',
-      joinDate: '2024-01-10',
-      lastActive: '30 minutes ago',
-      electionsManaged: 4,
-      avatar: '/api/placeholder/40/40'
-    }
-  ];
+  const {getAllAdmins}  = useContext(SuperAdminDataContext);
+  const [admins, setAdmins] = useState([]);
+
+    useEffect(() => {
+    const fetchAdmins = async () => {
+      const data = await getAllAdmins();
+      setAdmins(data); // ✅ store backend data
+    };
+    fetchAdmins();
+  }, [getAllAdmins]);
 
   const states = [
     'Maharashtra', 'Gujarat', 'Uttar Pradesh', 'Telangana', 'Karnataka', 
     'Tamil Nadu', 'Rajasthan', 'West Bengal', 'Madhya Pradesh', 'Punjab'
   ];
 
-  const filteredAdmins = admins.filter(admin => {
-    const matchesSearch = admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         admin.state.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesState = stateFilter === 'all' || admin.state === stateFilter;
-    return matchesSearch && matchesState;
-  });
+ const filteredAdmins = admins.filter(admin => {
+  const matchesSearch =
+    (admin.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (admin.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (admin.state?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+
+  const matchesState = stateFilter === "all" || admin.state === stateFilter;
+
+  return matchesSearch && matchesState;
+});
+
 
   const getStatusColor = (status) => {
     return status === 'Active' 
@@ -127,21 +89,21 @@ const AdminManagement = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Admins
+              Total Registered State Election Administrators
             </CardTitle>
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">28</div>
+            <div className="text-2xl font-bold">{filteredAdmins.length}</div>
             <p className="text-xs text-muted-foreground">
-              Across 28 states
+            Across all states
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Admins
+              Active Administrator
             </CardTitle>
             <UserCheck className="h-4 w-4 text-success" />
           </CardHeader>
@@ -227,7 +189,7 @@ const AdminManagement = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredAdmins.map((admin) => (
-<div key={admin.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-smooth gap-4">
+<div key={admin.admin_id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-smooth gap-4">
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                   <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
                     <AvatarImage src={admin.avatar} alt={admin.name} />
@@ -249,7 +211,7 @@ const AdminManagement = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        <span className="truncate">{admin.city}, {admin.state}</span>
+                        <span className="truncate">{admin.admin_of_state}</span>
                       </div>
                     </div>
                   </div>

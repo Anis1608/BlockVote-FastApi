@@ -35,6 +35,63 @@ const SuperAdminDataState = (props) => {
     }
   };
 
+  // get all admins
+
+  const getAllAdmins = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${host}/api/super_admin/all-admins`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // ✅ send cookies/session
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.Success) {
+        throw new Error(data.message || data.detail || "Failed to fetch admins");
+      }
+
+      // ✅ This will return only safe fields (no wallet, no password)
+      return data.data;
+    } catch (err) {
+      setMessage(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+};
+  const getAllCandidates = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`${host}/api/super_admin/candidates`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // ✅ send cookies/session
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.Success) {
+        throw new Error(data.message || data.detail || "Failed to fetch candidates");
+      }
+      return data.data;
+    } catch (err) {
+      setMessage(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+};
+
+
+
+
+
 
 
 
@@ -44,6 +101,8 @@ const SuperAdminDataState = (props) => {
     <SuperAdminDataContext.Provider
       value={{
         createSuperAdmin,
+        getAllAdmins,
+        getAllCandidates,
         loading,
         message,
       }}

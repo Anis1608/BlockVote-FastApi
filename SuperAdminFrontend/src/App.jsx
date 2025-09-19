@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import SuperAdminAuthState from "./context_api/SuperAdminAuthState";
 import { useContext } from "react";
 import SuperAdminDataState from "./context_api/SuperAdminDataState";
+import SuperAdminLogState from "./context_api/SuperAdminLogState";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <SuperAdminAuthState>
       <SuperAdminDataState>
+        <SuperAdminLogState>
         <ThemeProvider>
           <TooltipProvider>
             <Toaster />
@@ -91,6 +93,7 @@ const App = () => (
             <AppContent />
           </TooltipProvider>
         </ThemeProvider>
+        </SuperAdminLogState>
       </SuperAdminDataState>
     </SuperAdminAuthState>
   </QueryClientProvider>

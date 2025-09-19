@@ -26,11 +26,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { use } from 'react';
 import { SuperAdminDataContext } from '../context_api/SuperAdminDataState';
+import AdminCreationModal from '../components/layout/AdminCreationModal';
 
 const AdminManagement = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState('all');
+  const [openCreationModal, setOpenCreationModal] = useState(false);
 
   const {getAllAdmins}  = useContext(SuperAdminDataContext);
   const [admins, setAdmins] = useState([]);
@@ -41,7 +43,7 @@ const AdminManagement = () => {
       setAdmins(data); // ✅ store backend data
     };
     fetchAdmins();
-  }, [getAllAdmins]);
+  }, []);
 
   const states = [
     'Maharashtra', 'Gujarat', 'Uttar Pradesh', 'Telangana', 'Karnataka', 
@@ -78,10 +80,23 @@ const AdminManagement = () => {
             Manage state-level administrators across India
           </p>
         </div>
-        <Button className="bg-gradient-primary hover:bg-primary-hover">
-          <Plus className="w-4 h-4 mr-2" />
-          Create New Admin
-        </Button>
+       <Button 
+  className="bg-gradient-primary hover:bg-primary-hover"
+  onClick={() => setOpenCreationModal(true)}
+>
+  <Plus className="w-4 h-4 mr-2" />
+  Create New Admin
+</Button>
+      <AdminCreationModal
+        open={openCreationModal}
+        onClose={setOpenCreationModal}
+        elections={[]}
+        onSubmit={(data) => {
+          // Handle form submission, e.g., call API to create admin
+          console.log("Form Data Submitted:", data);
+        }}
+      />
+
       </div>
 
       {/* Stats Cards */}

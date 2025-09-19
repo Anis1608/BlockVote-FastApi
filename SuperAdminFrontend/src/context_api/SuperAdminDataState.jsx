@@ -89,6 +89,33 @@ const SuperAdminDataState = (props) => {
 };
 
 
+const getCandidateCountsByState = async () => {
+  try {
+    setLoading(true);
+    const response = await fetch(`${host}/api/super_admin/candidates-by-state`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.Success) {
+      throw new Error(data.message || data.detail || "Failed to fetch candidate counts");
+    }
+
+    return data.data;
+  } catch (err) {
+    setMessage(err.message);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
 
 
@@ -103,6 +130,7 @@ const SuperAdminDataState = (props) => {
         createSuperAdmin,
         getAllAdmins,
         getAllCandidates,
+        getCandidateCountsByState,
         loading,
         message,
       }}

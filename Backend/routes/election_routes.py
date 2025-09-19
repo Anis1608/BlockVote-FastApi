@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from datetime import datetime, timezone
 from database.db import get_db
-from database.models import Elections
+from database.models import Elections, SuperAdminLogs
 from middleware.security import access_check
 from datetime import datetime, time, timezone, timedelta
 from datetime import datetime
@@ -14,6 +14,20 @@ from pydantic import BaseModel
 IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter()
+
+def log_action(db, super_admin_id: str, title: str, action: str, status: str = "Success"):
+    try:
+        db.add(SuperAdminLogs(
+            super_admin_id=super_admin_id,
+            action_title=title,
+            action=action,
+            status=status
+        ))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Failed to log action: {e}")
+
 
 def get_current_phase(reg_start: datetime, voting_date: datetime, result_date: datetime) -> str:
     if reg_start.tzinfo is None:
@@ -61,7 +75,6 @@ class ElectionCreate(BaseModel):
 
 
 
-
 @router.post("/super_admin/create-elections")
 async def create_election(
     election: ElectionCreate,
@@ -84,6 +97,21 @@ async def create_election(
                 status_code=400,
                 detail="Result publish date must be after voting date"
             )
+        exists = db.query(Elections).filter(
+            Elections.election_state == election.election_state
+        ).first()
+        if exists:
+            log_action(
+                db,
+                admin.super_admin_id,
+                "Create Election Failed",
+                f"Election already exists for state {election.election_state}",
+                status="Failed"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=f"Election already exists for {election.election_state}"
+            )
 
         # Auto-phase
         current_phase = get_current_phase(reg_start, voting_date, result_date)
@@ -99,6 +127,12 @@ async def create_election(
         )
 
         db.add(new_election)
+        db.add(SuperAdminLogs(
+            super_admin_id=admin.super_admin_id,
+            action_title="Created Election",
+            action=f"Created election {new_election.title}",
+            status="Success"
+        ))
         db.commit()
         db.refresh(new_election)
 
@@ -116,9 +150,13 @@ async def create_election(
             }
         }
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    
+    except Exception as e:
+        db.rollback()
+        print("Error creating election:", e)
+        # Insert failure log separately
+        if not isinstance(e, HTTPException):
+            log_action(db, admin.super_admin_id, "Create Election Failed", str(e), status="Failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # update election Details api endpoint here 
@@ -182,6 +220,12 @@ async def update_election(
         # Recalculate current phase
         db_election.current_phase = get_current_phase(reg_start, voting_date, result_date)
 
+        db.add(SuperAdminLogs(
+            super_admin_id=admin.super_admin_id,
+            action_title="Updated Election",
+            action=f"Updated election {db_election.title}",
+            status="Success"
+        ))
         db.commit()
         db.refresh(db_election)
 
@@ -199,8 +243,11 @@ async def update_election(
             }
         }
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        db.rollback()
+        # Insert failure log separately
+        log_action(db, admin.super_admin_id, "Update Election Failed", str(e), status="Failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 

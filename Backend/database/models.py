@@ -32,21 +32,6 @@ class Admin(Base):
     candidates = relationship("Candidate", back_populates="admin")
     election = relationship("Elections", back_populates="admin")
 
-
-class Voter(Base):
-    __tablename__ = "voters"
-
-    voter_id = Column(String(100), nullable=False , primary_key=True , index=True)
-    name = Column(String(100), nullable=False)
-    email = Column(String(100), unique=True, nullable=False, index=True)
-    profile_picture = Column(String(255), nullable=True)
-    voter_dob = Column(DateTime, nullable=False)
-    voters_state = Column(String(100), nullable=False)
-    voters_city = Column(String(100), nullable=False)
-    voters_district = Column(String(100), nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
-
  
 class Elections(Base):
     __tablename__ = "elections"
@@ -90,3 +75,41 @@ class Candidate(Base):
 
     election = relationship("Elections" , back_populates="candidates")
     admin = relationship("Admin", back_populates="candidates")
+
+
+class VotersTable(Base):
+    __tablename__ = "voterstable"
+
+    voter_id = Column(String(20), primary_key=True, index=True)
+    aadhaar = Column(String(12), unique=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    father_name = Column(String(100), nullable=False)
+    gender = Column(String(10), nullable=False)
+    contact_number = Column(String(15), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False, index=True)
+    profile_picture = Column(String(255), nullable=True)
+    signature = Column(String(255), nullable=True)
+    voter_dob = Column(DateTime, nullable=False)
+    voters_state = Column(String(100), nullable=False)
+    voters_city = Column(String(100), nullable=False)
+    voters_district = Column(String(100), nullable=False)
+    pincode = Column(String(10), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class SuperAdminLogs(Base):
+    __tablename__ = "super_admins_logs"
+
+    log_id = Column(Integer, primary_key=True, index=True , nullable=False)
+    super_admin_id = Column(String(100), ForeignKey("super_admin.super_admin_id"), nullable=False)
+    action_title = Column(String(255), nullable=False)
+    action = Column(String(255), nullable=False)
+    status = Column(String(50), nullable=False, default="Success")
+    timestamp = Column(DateTime, server_default=func.now(), nullable=False)
+
+    super_admin = relationship("SuperAdmin")
+
+
+
+

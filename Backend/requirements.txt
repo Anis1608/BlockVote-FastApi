@@ -16,6 +16,8 @@ passlib
 qrcode[pil]
 reportlab
 py-solc-x
+cloudinary
+python-multipart
 
 
 

@@ -16,7 +16,7 @@ def generateIdForCandidate(prefix="CAND", length=15):
     random_part = ''.join(random.choices(chars, k=length - len(prefix)))
     return prefix + random_part
 
-def generateIdForVoters(prefix="ADM", length=15):
+def generateIdForVoters(prefix="VOT", length=10):
     chars = string.ascii_uppercase + string.digits
     random_part = ''.join(random.choices(chars, k=length - len(prefix)))
     return prefix + random_part

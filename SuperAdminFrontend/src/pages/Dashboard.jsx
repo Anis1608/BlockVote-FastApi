@@ -1,17 +1,23 @@
-﻿import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Calendar, 
-  UserCheck, 
-  BarChart3, 
-  TrendingUp, 
+﻿import React, { useEffect, useContext } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  Calendar,
+  UserCheck,
+  BarChart3,
+  TrendingUp,
   Activity,
-  Shield
-} from 'lucide-react';
-import { Bar, Doughnut } from 'react-chartjs-2';
+  Shield,
+} from "lucide-react";
+import { Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,7 +27,11 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-} from 'chart.js';
+} from "chart.js";
+import { useState } from "react";
+import { SuperAdminDataContext } from "../context_api/SuperAdminDataState";
+import { SuperAdminLogContext } from "../context_api/SuperAdminLogState";
+import RecentActivityModal from "../components/layout/RecentActivityModal";
 
 ChartJS.register(
   CategoryScale,
@@ -32,91 +42,188 @@ ChartJS.register(
   Legend,
   ArcElement
 );
-
 const Dashboard = () => {
+  const [candidateCounts, setCandidateCounts] = useState([]);
+  const [health, setHealth] = useState(0);
+  const [interactions, setInteractions] = useState(0);
+  const [logs, setLogs] = useState([]);
+  const [openModal, setOpenModal] = useState(false);
+
+  const { getCandidateCountsByState } = useContext(SuperAdminDataContext);
+  const { getlogs } = useContext(SuperAdminLogContext);
+
+  useEffect(() => {
+    const fetchCandidateCounts = async () => {
+      const counts = await getCandidateCountsByState();
+      setCandidateCounts(counts);
+    };
+    fetchCandidateCounts();
+  }, []);
+
+  // WebSocket for health
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:9000/ws/health");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setHealth(data.health_percentage);
+      setInteractions(data.interaction_count);
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+
+    return () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      const res = await getlogs();
+      setLogs(res);
+    };
+    fetchLogs();
+  }, []);
+
+  // console.log(candidateCounts);
+
+  const getHealthColors = (health) => {
+    if (health < 25)
+      return {
+        color: "text-red-600",
+        bgColor: "bg-red-200",
+        status: "Unstable",
+      };
+    if (health < 50)
+      return {
+        color: "text-orange-600",
+        bgColor: "bg-orange-200",
+        status: "Warning",
+      };
+    if (health < 75)
+      return {
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-200",
+        status: "Moderate",
+      };
+    return {
+      color: "text-green-600",
+      bgColor: "bg-green-200",
+      status: "Stable",
+    };
+  };
+
+  const { color, bgColor, status } = getHealthColors(health);
+
   const statsCards = [
     {
-      title: 'Total Elections',
-      value: '12',
-      change: '+2 this month',
-      icon: Calendar,
-      color: 'text-primary',
-      bgColor: 'bg-primary-light',
-    },
-    {
-      title: 'Active Candidates',
-      value: '1,248',
-      change: '+156 new',
-      icon: Users,
-      color: 'text-success',
-      bgColor: 'bg-success-light',
-    },
-    {
-      title: 'State Admins',
-      value: '28',
-      change: 'All states covered',
+      title: "Blockchain Health",
+      value: health + "%",
+      change: status,
       icon: UserCheck,
-      color: 'text-accent',
-      bgColor: 'bg-accent-light',
+      color: color,
+      bgColor: bgColor,
     },
     {
-      title: 'Total Votes Cast',
-      value: '2.4M',
-      change: '+12% from last election',
-      icon: BarChart3,
-      color: 'text-primary',
-      bgColor: 'bg-primary-light',
+      title: "Total Elections",
+      value: "12",
+      change: "+2 this month",
+      icon: Calendar,
+      color: "text-primary",
+      bgColor: "bg-primary-light",
     },
-  ];
+    {
+      title: "Currently Blockchain Interaction",
+      value: interactions,
+      change: "Live updates",
+      icon: Users,
+      color: "text-success",
+      bgColor: "bg-success-light",
+    },
 
-  const recentElections = [
-    { state: 'Maharashtra', status: 'Active', phase: 'Phase 2', endDate: '2024-02-15' },
-    { state: 'Karnataka', status: 'Completed', phase: 'Results', endDate: '2024-01-28' },
-    { state: 'Gujarat', status: 'Upcoming', phase: 'Registration', endDate: '2024-03-10' },
-    { state: 'Tamil Nadu', status: 'Active', phase: 'Phase 1', endDate: '2024-02-20' },
+    {
+      title: "Total Votes Cast",
+      value: "2.4M",
+      change: "+12% from last election",
+      icon: BarChart3,
+      color: "text-primary",
+      bgColor: "bg-primary-light",
+    },
   ];
 
   const electionData = {
-    labels: ['Maharashtra', 'Karnataka', 'Gujarat', 'Tamil Nadu', 'Rajasthan', 'Punjab'],
+    labels: [
+      "Andhra Pradesh",
+      "Arunachal Pradesh",
+      "Assam",
+      "Bihar",
+      "Chhattisgarh",
+      "Goa",
+      "Gujarat",
+      "Haryana",
+      "Himachal Pradesh",
+      "Jharkhand",
+      "Karnataka",
+      "Kerala",
+      "Madhya Pradesh",
+      "Maharashtra",
+      "Manipur",
+      "Meghalaya",
+      "Mizoram",
+      "Nagaland",
+      "Odisha",
+      "Punjab",
+      "Rajasthan",
+      "Sikkim",
+      "Tamil Nadu",
+      "Telangana",
+      "Tripura",
+      "Uttar Pradesh",
+      "Uttarakhand",
+      "West Bengal",
+      "Andaman & Nicobar Islands",
+      "Chandigarh",
+      "Dadra & Nagar Haveli and Daman & Diu",
+      "Delhi",
+      "Jammu & Kashmir",
+      "Ladakh",
+      "Lakshadweep",
+      "Puducherry",
+    ],
     datasets: [
       {
-        label: 'Registered Candidates',
-        data: [85, 92, 78, 105, 67, 89],
-        backgroundColor: 'hsl(220 91% 15%)',
-        borderColor: 'hsl(220 91% 15%)',
-        borderWidth: 1,
-      },
-      {
-        label: 'Approved Candidates',
-        data: [82, 89, 75, 98, 64, 85],
-        backgroundColor: 'hsl(138 76% 25%)',
-        borderColor: 'hsl(138 76% 25%)',
+        label: "Registered Candidates",
+        data: candidateCounts || [50, 75, 150, 100, 200, 175, 80],
+        backgroundColor: "hsl(220 91% 15%)",
+        borderColor: "hsl(220 91% 15%)",
         borderWidth: 1,
       },
     ],
   };
 
   const voteDistribution = {
-    labels: ['Completed Elections', 'Active Elections', 'Upcoming Elections'],
+    labels: ["Completed Elections", "Active Elections", "Upcoming Elections"],
     datasets: [
       {
         data: [45, 35, 20],
         backgroundColor: [
-          'hsl(138 76% 25%)',
-          'hsl(28 100% 58%)',
-          'hsl(220 91% 15%)',
+          "hsl(138 76% 25%)",
+          "hsl(28 100% 58%)",
+          "hsl(220 91% 15%)",
         ],
         borderWidth: 0,
       },
     ],
   };
 
-  const getStatusColor = (status) => {
+  const getLogStatusColor = (status) => {
     switch (status) {
-      case 'Active': return 'bg-success text-success-foreground';
-      case 'Completed': return 'bg-primary text-primary-foreground';
-      case 'Upcoming': return 'bg-warning text-warning-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case "Success":
+        return "bg-success text-success-foreground";
+      case "Failed":
+        return "bg-red-400 text-red-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -134,7 +241,9 @@ const Dashboard = () => {
         </div>
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-success" />
-          <span className="text-sm text-success font-medium">Blockchain Secured</span>
+          <span className="text-sm text-success font-medium">
+            Blockchain Secured
+          </span>
         </div>
       </div>
 
@@ -146,12 +255,18 @@ const Dashboard = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <div
+                className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}
+              >
+                <stat.icon className="h-5 w-5 text-gray-500" />{" "}
+                {/* Icon static color */}
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+              <div className={`text-2xl font-bold ${stat.color}`}>
+                {stat.value}
+              </div>{" "}
+              {/* Value text dynamic */}
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                 <TrendingUp className="h-3 w-3" />
                 {stat.change}
@@ -167,37 +282,49 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              Recent Elections
+              Recent Activity
             </CardTitle>
             <CardDescription>
-              Current status of ongoing and recent elections
+              Status of recent actions and system logs
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentElections.map((election, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-smooth">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <div>
-                      <p className="font-medium">{election.state} Assembly Elections</p>
-                      <p className="text-sm text-muted-foreground">{election.phase}</p>
+              {logs.length > 0 ? (
+                logs.slice(0,5).map((log) => (
+                  <div
+                    key={log.log_id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-smooth"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-primary"></div>
+                      <div>
+                        <p className="font-medium">{log.action_title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {log.action}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getLogStatusColor(log.status)}>
+                        {" "}
+                        {log.status}{" "}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getStatusColor(election.status)}>
-                      {election.status}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {election.endDate}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-muted-foreground">No logs available</p>
+              )}
             </div>
-            <Button variant="outline" className="w-full mt-4">
-              View All Elections
-            </Button>
+
+       <Button variant="outline" className="w-full mt-4" onClick={() => setOpenModal(true)}>
+    View All Activity
+  </Button>
+    <RecentActivityModal open={openModal} onClose={setOpenModal} logs={logs} />
           </CardContent>
         </Card>
 
@@ -208,9 +335,7 @@ const Dashboard = () => {
               <BarChart3 className="w-5 h-5" />
               Election Status
             </CardTitle>
-            <CardDescription>
-              Distribution of election phases
-            </CardDescription>
+            <CardDescription>Distribution of election phases</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -221,7 +346,7 @@ const Dashboard = () => {
                   maintainAspectRatio: false,
                   plugins: {
                     legend: {
-                      position: 'bottom',
+                      position: "bottom",
                     },
                   },
                 }}
@@ -251,7 +376,7 @@ const Dashboard = () => {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    position: 'top',
+                    position: "top",
                   },
                 },
                 scales: {

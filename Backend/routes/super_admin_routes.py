@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException , Request , Body  ,Query
+from fastapi import APIRouter, Depends, HTTPException , BackgroundTasks , Request , Body  ,Query
 from uuid import uuid4
 from ua_parser import user_agent_parser
 from user_agents import parse as parse_ua
@@ -119,7 +119,8 @@ async def register_super_admin(super_admin: SuperAdmin, db: Session = Depends(ge
 @router.post("/super_admin/login-request")
 async def login_super_admin(
     login_data: SuperAdminLogin,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None
 ):
     try:
         # Fetch the super admin from the database
@@ -136,8 +137,9 @@ async def login_super_admin(
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         otp = generate_otp()
-        store_otp_in_redis(login_data.email, otp , "login")
-        send_otp_email(login_data.email,otp)
+        # store_otp_in_redis(login_data.email, otp , "login")
+        background_tasks.add_task(store_otp_in_redis, login_data.email, otp , "login" )
+        background_tasks.add_task(send_otp_email, login_data.email, otp)
         try:
             result = redis_client.set(f"temp:login:{login_data.email}", login_data.super_admin_id, ex=300)
             print("Redis SET result:", result)
@@ -291,6 +293,18 @@ async def create_admin(
                 "admin_of_state": admin_data.admin_of_state
             }
         )
+        db.execute(
+            text("""
+                INSERT INTO super_admins_logs (super_admin_id, action_title, action , status)
+                VALUES (:super_admin_id, :action_title, :action, :status)
+            """),
+            {
+                "super_admin_id": admin.super_admin_id,
+                "action_title": "Created Admin",
+                "action": f"Created admin {admin_data.name} with email {admin_data.email}",
+                "status": "Success"
+            }
+        )
         db.commit()
 
         # Step 4: Register this admin on blockchain (superadmin calls the contract)
@@ -320,7 +334,25 @@ async def create_admin(
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        # Yaha pe log insert karo failed ke saath
+        try:
+            db.execute(
+                text("""
+                    INSERT INTO super_admins_logs (super_admin_id, action_title, action, status)
+                    VALUES (:super_admin_id, :action_title, :action, :status)
+                """),
+                {
+                    "super_admin_id": admin.super_admin_id,
+                    "action_title": "Create Admin Failed",
+                    "action": f"Failed to create admin {admin_data.name} with email {admin_data.email}. Reason: {str(e)}",
+                    "status": "failed"
+                }
+            )
+            db.commit()
+        except:
+            db.rollback()  # agar logging bhi fail ho jaye toh crash na kare
+
+        raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
     
 # superadmin get all candidates using state passing as query parameter
 
@@ -344,8 +376,51 @@ async def get_candidates_by_state(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
 
+
+# get candidate counts by state for all 36 states/UTs
+
+@router.get("/super_admin/candidates-by-state")
+async def get_candidate_counts_by_state(
+    db: Session = Depends(get_db),
+    admin=Depends(access_check)
+):
+    try:
+        # Define all 36 states/UTs
+        labels = [
+            'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+            'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+            'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+            'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+            'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+            'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+            'Andaman & Nicobar Islands', 'Chandigarh', 'Dadra & Nagar Haveli and Daman & Diu',
+            'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+        ]
+
+        # Query to count candidates grouped by state
+        query = text("""
+            SELECT candidate_state, COUNT(*) as count 
+            FROM candidate 
+            GROUP BY candidate_state
+        """)
+        result = db.execute(query).mappings().fetchall()
+
+        # Convert result to dict for quick lookup
+        state_counts = {row['candidate_state']: row['count'] for row in result}
+
+        # Match counts to labels, default to 0 if state is missing
+        data = [state_counts.get(state, 0) for state in labels]
+
+        return {
+            "Success": True,
+            "message": "Candidate counts by state fetched successfully",
+            "labels": labels,
+            "data": data
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # get all admins
 @router.get("/super_admin/all-admins")

@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BlockVote India Design System - Indian Flag Inspired Theme */
+
+@layer base {
+  :root {
+    /* Core Colors */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 27%;
+
+    /* Card & Surface */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+    --card-hover: 35 100% 97%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* Primary - Saffron Orange (Indian Flag) */
+    --primary: 25 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 25 100% 50%;
+    --primary-light: 25 100% 95%;
+
+    /* Secondary - Indian Green (Flag) */  
+    --secondary: 120 100% 25%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-hover: 120 100% 20%;
+    --secondary-light: 120 100% 95%;
+
+    /* Accent - Navy Blue (Ashoka Chakra) */
+    --accent: 220 100% 25%;
+    --accent-foreground: 0 0% 100%;
+    --accent-light: 220 100% 95%;
+
+    /* Muted & Neutral */
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    /* Indian Flag Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(25 100% 55%), hsl(25 100% 45%));
+    --gradient-secondary: linear-gradient(135deg, hsl(120 100% 25%), hsl(120 100% 30%));
+    --gradient-hero: linear-gradient(135deg, hsl(25 100% 55%) 0%, hsl(0 0% 100%) 30%, hsl(120 100% 25%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(35 100% 98%));
+    --gradient-tricolor: linear-gradient(180deg, hsl(25 100% 55%) 0%, hsl(0 0% 100%) 50%, hsl(120 100% 25%) 100%);
+
+    /* Shadows with Indian Colors */
+    --shadow-sm: 0 1px 2px 0 hsl(25 100% 55% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(25 100% 55% / 0.1), 0 2px 4px -1px hsl(25 100% 55% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(25 100% 55% / 0.15), 0 4px 6px -2px hsl(120 100% 25% / 0.1);
+    --shadow-glow: 0 0 30px hsl(25 100% 55% / 0.4);
+    --shadow-tricolor: 0 10px 30px -5px hsl(25 100% 55% / 0.2), 0 0 40px hsl(120 100% 25% / 0.1);
+
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    /* Core Colors */
+    --background: 222 47% 11%;
+    --foreground: 213 31% 91%;
+
+    /* Card & Surface */
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --card-hover: 215 28% 17%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+
+    /* Dark Mode - Indian Colors */
+    --primary: 25 100% 60%;
+    --primary-foreground: 222 47% 11%;
+    --primary-hover: 25 100% 65%;
+    --primary-light: 25 100% 25%;
+
+    /* Secondary - Indian Green for Dark */
+    --secondary: 120 100% 35%;
+    --secondary-foreground: 222 47% 11%;
+    --secondary-hover: 120 100% 40%;
+    --secondary-light: 120 100% 15%;
+
+    /* Accent - Navy Blue for Dark */
+    --accent: 220 100% 35%;
+    --accent-foreground: 213 31% 91%;
+    --accent-light: 213 94% 20%;
+
+    /* Muted & Neutral */
+    --muted: 215 28% 17%;
+    --muted-foreground: 217 11% 65%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
+
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 217 91% 60%;
+
+    /* Dark Mode - Indian Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(25 100% 60%), hsl(25 100% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(120 100% 35%), hsl(120 100% 30%));
+    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(25 100% 60%) 50%, hsl(120 100% 35%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(224 71% 4%), hsl(215 28% 17%));
+    --gradient-tricolor: linear-gradient(180deg, hsl(25 100% 60%) 0%, hsl(222 47% 11%) 50%, hsl(120 100% 35%) 100%);
+
+    /* Dark Shadows with Indian Colors */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(25 100% 60% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.15), 0 4px 6px -2px hsl(120 100% 35% / 0.1);
+    --shadow-glow: 0 0 30px hsl(25 100% 60% / 0.4);
+    --shadow-tricolor: 0 10px 30px -5px hsl(25 100% 60% / 0.3), 0 0 40px hsl(120 100% 35% / 0.2);
+  }
+}
+
+/* Component Styles */
+@layer components {
+  .btn-hero {
+    @apply bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-glow transition-all duration-300 hover:scale-105 border-0;
+  }
+
+  .btn-secondary-hero {
+    @apply bg-secondary text-secondary-foreground font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-lg hover:bg-secondary-hover transition-all duration-300 hover:scale-105;
+  }
+
+  .card-feature {
+    @apply bg-gradient-to-br from-card to-card-hover border border-border rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1;
+  }
+
+  .card-election {
+    @apply bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  .hero-pattern {
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(25 100% 55% / 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, hsl(120 100% 25% / 0.1) 0%, transparent 50%);
+  }
+
+  .tricolor-border {
+    @apply border-l-4 border-l-primary relative;
+  }
+
+  .tricolor-border::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1;
+    background: var(--gradient-tricolor);
+  }
+
+  .indian-card {
+    @apply card-feature relative overflow-hidden;
+    background: linear-gradient(145deg, hsl(0 0% 100%), hsl(35 100% 98%));
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .indian-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-tricolor);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

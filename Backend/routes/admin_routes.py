@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Body
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks,  Request, Body
 from sqlalchemy.orm import Session
 from web3 import Web3
 from database.db import get_db
@@ -58,6 +58,7 @@ async def admin_login(
     email: str = Body(..., pattern=r'^[\w\.-]+@[\w\.-]+\.\w+$', description="Email address of the admin"),
     password: str = Body(..., min_length=8, description="Password for the admin account"), 
     db: Session = Depends(get_db)):
+    background_tasks: BackgroundTasks = None
 
     # Check if the admin exists
     try:
@@ -68,22 +69,17 @@ async def admin_login(
             text("SELECT * FROM admin WHERE name = :name AND email = :email"),
             {"name": name, "email": email}
         ).mappings().fetchone()
-
-        print("Admin found:", admin)
-
+        # print("Admin found:", admin)
         adminId = admin['admin_id'] if admin else None
-
-        print("Admin ID:", adminId)
-
+        # print("Admin ID:", adminId)
         if not admin:
             raise HTTPException(status_code=404, detail="Admin not found")
 
         # Generate OTP
         otp = generate_otp()
-        store_otp_in_redis(email, otp , "login")
-
-        # Send OTP to admin's email
-        send_otp_email(email, otp)
+        background_tasks.add_task(store_otp_in_redis, email, otp , "login" )
+        background_tasks.add_task(send_otp_email, email, otp)
+        # send_otp_email(email, otp)
 
         try:
             result = redis_client.set(f"temp:login:{email}", adminId, ex=300)  # Store OTP for 5 minutes
@@ -202,6 +198,7 @@ async def register_candidate(
     party_name: str = Body(..., description="Name of the political party the candidate represents"),
     candidate_city: str = Body(..., description="City the candidate is contesting from"),
     candidate_district: str = Body(..., description="District the candidate is contesting from"),
+    manifesto: str = Body(None, description="Candidate's manifesto (optional)"),
     admin_data=Depends(access_check_for_admin),
     db: Session = Depends(get_db)
 ):
@@ -238,6 +235,7 @@ async def register_candidate(
         "candidate_state": candidate_state,
         "candidate_city": candidate_city,
         "candidate_district": candidate_district,
+        "manifesto":manifesto,
         "election_id": election_id,
         "state": candidate_state,
     }
@@ -249,11 +247,11 @@ async def register_candidate(
                 INSERT INTO candidate (
                     candidate_id, admin_id, name, email, aadhaar_number, 
                     qualification, candidate_age, party_name, candidate_state, 
-                    candidate_city, candidate_district, election_id
+                    candidate_city, candidate_district, election_id, manifesto
                 ) VALUES (
                     :candidate_id, :admin_id, :name, :email, :aadhaar_number, 
                     :qualification, :candidate_age, :party_name, :candidate_state, 
-                    :candidate_city, :candidate_district, :election_id
+                    :candidate_city, :candidate_district, :election_id, :manifesto
                 )
             """),
             new_candidate

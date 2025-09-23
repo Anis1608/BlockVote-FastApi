@@ -21,14 +21,14 @@ const getlogs = async () => {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch Logs");
+      throw new Error("Failed to fetch logs");
     }
 
     const data = await response.json(); 
     console.log("Fetched logs context:", data);
 
-    // ✅ data is already an array
-    return Array.isArray(data) ? data : [];
+    // ✅ Extract `data` array from response object
+    return Array.isArray(data.data) ? data.data : [];
   } catch (err) {
     setMessage(err.message);
     return [];
@@ -36,6 +36,7 @@ const getlogs = async () => {
     setLoading(false);
   }
 };
+
 
   return (
     <SuperAdminLogContext.Provider

@@ -20,9 +20,6 @@ import dotenv
 dotenv.load_dotenv()
 
 
-# ---------------- Helper Functions ----------------
-
-
 secret_string   = os.getenv("ENCRYPTION_KEY")
 
 def fetch_image_from_url(url):

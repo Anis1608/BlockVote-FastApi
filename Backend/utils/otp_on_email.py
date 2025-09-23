@@ -3,18 +3,16 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from database.db import redis_client
-import redis
-
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
-# Constants
-MAX_OTP_ATTEMPTS = 5          # Max OTP requests allowed
-OTP_EXPIRY = 300              # OTP expiry in seconds (5 minutes)
+
+MAX_OTP_ATTEMPTS = 5         
+OTP_EXPIRY = 300             
 OTP_ATTEMPTS_WINDOW = 900  
 
-# store otp in redis of multiple user and mulitple time of user
 def generate_otp():
     import random
     return str(random.randint(100000, 999999))
@@ -31,13 +29,13 @@ def store_otp_in_redis(email: str, otp: str, purpose: str, expiry: int = 300, at
         raise Exception("Maximum OTP requests exceeded. Please try again later.")
 
     with redis_client.pipeline() as pipe:
-        pipe.set(otp_key, otp, ex=expiry)              # Store OTP with expiry
-        pipe.incr(attempts_key)                        # Increment attempts count
-        pipe.expire(attempts_key, attempts_window)     # Reset attempts after window
+        pipe.set(otp_key, otp, ex=expiry)             
+        pipe.incr(attempts_key)
+        pipe.expire(attempts_key, attempts_window)
         pipe.execute()
 
 
-# Verify OTP with cleanup and purpose
+# Verify OTP
 async def verify_otp(email: str, otp: str, purpose: str ):
     otp_key = f"otp:{purpose}:{email}"
     attempts_key = f"otp_attempts:{purpose}:{email}"
@@ -194,8 +192,8 @@ def send_otp_email(to_email: str, otp: str):
     msg.attach(part)
 
     with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
-        server.ehlo()  # Optional, but good practice
+        server.ehlo() 
         server.starttls()
-        server.ehlo()  # Optional, but good practice
+        server.ehlo()
         server.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
         server.sendmail(EMAIL_HOST_USER, [to_email], msg.as_string())

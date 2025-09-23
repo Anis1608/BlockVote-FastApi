@@ -1,16 +1,18 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException , BackgroundTasks , Request , Body  ,Query
+from fastapi import APIRouter, Depends, HTTPException , BackgroundTasks , Request , Body
 from uuid import uuid4
+import redis
 from ua_parser import user_agent_parser
-from user_agents import parse as parse_ua
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from utils.json_serializer import json_serializer_for_time
 from database.db import get_db
 from pydantic_models.Super_admin import SuperAdmin , SuperAdminLogin , SuperAdminCreatesAdmin
 from utils.id_generator import generateIdForAdmin
 from middleware.security import access_check
 from fastapi.responses import JSONResponse
+from database.db import get_redis
 import jwt
 import os
 import time
@@ -75,6 +77,9 @@ def send_avax(to_address: str, amount_in_avax: float) -> str:
 router = APIRouter()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Custom function to handle datetime serialization
+
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -356,21 +361,37 @@ async def create_admin(
     
 # superadmin get all candidates using state passing as query parameter
 
+
 @router.get("/super_admin/candidates")
-async def get_candidates_by_state(
+def get_candidates_by_state(
     db: Session = Depends(get_db),
-    admin=Depends(access_check)  # Only superadmin access
+    admin=Depends(access_check),  # Only superadmin access
+    redis: redis.Redis = Depends(get_redis)
 ):
     try:
-        # Fetch candidates for the given state
+        # Create a unique cache key per admin
+        cache_key = f"superadmin:{admin.super_admin_id}:candidates"
+
+        # Check cache
+        cached_data = redis.get(cache_key)
+        if cached_data:
+            candidates = json.loads(cached_data)
+            return {
+                "Success": True,
+                "message": "Candidates fetched successfully from cache",
+                "data": candidates
+            }
+
+        # Fetch candidates from DB
         query = text("SELECT * FROM candidate")
         result = db.execute(query).mappings().fetchall()
-
         if not result:
-            return {"Success": True, "message": f"No candidates found", "data": []}
+            return {"Success": True, "message": "No candidates found", "data": []}
 
-        # Convert result to list of dicts
         candidates = [dict(row) for row in result]
+
+        # Cache data with a TTL (30 seconds)
+        redis.setex(cache_key, 30, json.dumps(candidates, default=json_serializer_for_time))
 
         return {"Success": True, "message": "Candidates fetched successfully", "data": candidates}
 

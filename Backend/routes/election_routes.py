@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from datetime import datetime, timezone
 from database.db import get_db
 from database.models import Elections, SuperAdminLogs

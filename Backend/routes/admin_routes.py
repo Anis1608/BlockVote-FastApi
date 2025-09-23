@@ -57,10 +57,10 @@ async def admin_login(
     name: str = Body(..., min_length=3, max_length=50, description="Username of the admin"),
     email: str = Body(..., pattern=r'^[\w\.-]+@[\w\.-]+\.\w+$', description="Email address of the admin"),
     password: str = Body(..., min_length=8, description="Password for the admin account"), 
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = None
+    ):
 
-    # Check if the admin exists
     try:
         if not name or not email or not password:
             raise HTTPException(status_code=400, detail="Name, email, and password are required")
@@ -196,6 +196,10 @@ async def register_candidate(
     qualification: str = Body(..., description="Qualification of the candidate"),
     candidate_age: int = Body(..., ge=18, description="Age of the candidate (must be at least 18)"),
     party_name: str = Body(..., description="Name of the political party the candidate represents"),
+    profile_picture: str = Body(None, description="URL of the candidate's profile picture (optional)"),
+    experience: str = Body(None, description="Candidate's political experience (optional)"),
+    previous_positions: str = Body(None, description="List of previous political positions held (optional)"),
+    achievements: list[str] = Body(None, description="List of candidate's achievements (optional)"),
     candidate_city: str = Body(..., description="City the candidate is contesting from"),
     candidate_district: str = Body(..., description="District the candidate is contesting from"),
     manifesto: str = Body(None, description="Candidate's manifesto (optional)"),
@@ -231,6 +235,10 @@ async def register_candidate(
         "aadhaar_number": aadhaar_number,
         "qualification": qualification,
         "candidate_age": candidate_age,
+        "profile_picture": profile_picture,
+        "experience": experience,
+        "previous_positions": previous_positions,
+        "achievements": json.dumps(achievements) if achievements else None,
         "party_name": party_name,
         "candidate_state": candidate_state,
         "candidate_city": candidate_city,
@@ -246,11 +254,13 @@ async def register_candidate(
             text("""
                 INSERT INTO candidate (
                     candidate_id, admin_id, name, email, aadhaar_number, 
-                    qualification, candidate_age, party_name, candidate_state, 
+                    qualification, candidate_age, party_name, profile_picture, experience,
+                    previous_positions, achievements, candidate_state, 
                     candidate_city, candidate_district, election_id, manifesto
                 ) VALUES (
                     :candidate_id, :admin_id, :name, :email, :aadhaar_number, 
-                    :qualification, :candidate_age, :party_name, :candidate_state, 
+                    :qualification, :candidate_age, :party_name, :profile_picture, :experience,
+                    :previous_positions, :achievements, :candidate_state, 
                     :candidate_city, :candidate_district, :election_id, :manifesto
                 )
             """),

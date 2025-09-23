@@ -1,7 +1,5 @@
 # ye reddis queue worker hai jo background me chalke email bhejega
 
-import os
-import redis
 from rq import Worker, Queue, Connection
 from database.db import redis_client
 

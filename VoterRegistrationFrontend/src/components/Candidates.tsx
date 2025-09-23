@@ -1,37 +1,22 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Search, 
-  Filter, 
   ExternalLink, 
   User,
   Award,
   MapPin,
-  Users
+  Users,
+  FileText,
+  Calendar,
+  Mail
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import indianFlag from "@/assets/indian-flag.jpg";
 
 export function Candidates() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedState, setSelectedState] = useState("all");
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const candidates = [
     {
@@ -41,7 +26,13 @@ export function Candidates() {
       constituency: "Mumbai North",
       experience: "15 years",
       manifesto: "https://example.com/manifesto1",
-      party_color: "bg-blue-600"
+      party_color: "bg-blue-600",
+      profile: "/api/placeholder/80/80",
+      education: "MBA, Harvard University",
+      age: 48,
+      previousPosition: "Member of Legislative Assembly",
+      achievements: ["Education Reformer", "Infrastructure Development", "Youth Employment"],
+      contact: "rajesh.sharma@example.com"
     },
     {
       name: "Priya Patel",
@@ -50,7 +41,13 @@ export function Candidates() {
       constituency: "Ahmedabad West",
       experience: "8 years",
       manifesto: "https://example.com/manifesto2",
-      party_color: "bg-orange-600"
+      party_color: "bg-orange-600",
+      profile: "/api/placeholder/80/80",
+      education: "PhD in Economics",
+      age: 42,
+      previousPosition: "Corporate Executive",
+      achievements: ["Women Empowerment", "Economic Development", "Healthcare Access"],
+      contact: "priya.patel@example.com"
     },
     {
       name: "Mohammed Ali Khan",
@@ -59,7 +56,13 @@ export function Candidates() {
       constituency: "New Delhi",
       experience: "5 years", 
       manifesto: "https://example.com/manifesto3",
-      party_color: "bg-blue-400"
+      party_color: "bg-blue-400",
+      profile: "/api/placeholder/80/80",
+      education: "Law Degree, Delhi University",
+      age: 38,
+      previousPosition: "Social Activist",
+      achievements: ["Anti-Corruption", "Public Service Reform", "Environmental Protection"],
+      contact: "mohammed.khan@example.com"
     },
     {
       name: "Sunita Devi",
@@ -68,7 +71,13 @@ export function Candidates() {
       constituency: "Kolkata South",
       experience: "12 years",
       manifesto: "https://example.com/manifesto4",
-      party_color: "bg-green-600"
+      party_color: "bg-green-600",
+      profile: "/api/placeholder/80/80",
+      education: "MA in Political Science",
+      age: 52,
+      previousPosition: "Local Council Member",
+      achievements: ["Rural Development", "Women's Safety", "Education Access"],
+      contact: "sunita.devi@example.com"
     },
     {
       name: "Dr. Arjun Reddy",
@@ -77,7 +86,13 @@ export function Candidates() {
       constituency: "Visakhapatnam",
       experience: "7 years",
       manifesto: "https://example.com/manifesto5",
-      party_color: "bg-yellow-600"
+      party_color: "bg-yellow-600",
+      profile: "/api/placeholder/80/80",
+      education: "MBBS, MD",
+      age: 45,
+      previousPosition: "Chief Medical Officer",
+      achievements: ["Healthcare Reform", "Medical Infrastructure", "Public Health"],
+      contact: "arjun.reddy@example.com"
     },
     {
       name: "Kavitha Nair",
@@ -86,30 +101,39 @@ export function Candidates() {
       constituency: "Thiruvananthapuram",
       experience: "10 years",
       manifesto: "https://example.com/manifesto6",
-      party_color: "bg-blue-600"
+      party_color: "bg-blue-600",
+      profile: "/api/placeholder/80/80",
+      education: "MSW, Kerala University",
+      age: 43,
+      previousPosition: "Social Worker",
+      achievements: ["Poverty Alleviation", "Child Welfare", "Community Development"],
+      contact: "kavitha.nair@example.com"
     }
   ];
 
-  const states = [...new Set(candidates.map(c => c.state))];
-
-  const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.party.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.constituency.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesState = selectedState === "all" || candidate.state === selectedState;
-    return matchesSearch && matchesState;
-  });
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle('dark');
+  };
 
   return (
-    <section id="candidates" className="py-20 bg-gradient-to-br from-background to-secondary-light/5">
+    <section 
+      id="candidates" 
+      className={`py-20 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-background to-secondary-light/5'}`}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center px-6 py-3 rounded-full bg-primary-light/20 border border-primary/30 mb-6">
             <img src={indianFlag} alt="Indian Flag" className="h-5 w-7 mr-3 rounded-sm" />
             <Users className="h-4 w-4 text-primary mr-2" />
-            <span className="text-sm font-semibold text-primary">उम्मीदवार सूची | Candidate Directory</span>
+            <span className="text-sm font-semibold text-primary">
+              उम्मीदवार सूची | Candidate Directory
+            </span>
           </div>
+
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gradient mb-4">
             Election Candidates
           </h2>
@@ -120,134 +144,145 @@ export function Candidates() {
             Browse and research candidates running in upcoming elections across all Indian states. 
             Make informed decisions with detailed candidate information and manifestos.
           </p>
+          
+          {/* Dark Mode Toggle */}
+          <div className="mt-6 flex justify-center">
+            <Button 
+              variant="outline" 
+              onClick={toggleDarkMode}
+              className="flex items-center gap-2 border border-gray-400 
+                        text-black hover:text-black hover:bg-gray-100 
+                        dark:text-white dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            </Button>
+          </div>
         </div>
 
-        {/* Search and Filter */}
-        <Card className="mb-8 indian-card">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl text-gradient">
-              <Search className="h-5 w-5 mr-2 text-primary" />
-              खोजें और फ़िल्टर करें | Search & Filter Candidates
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, party, or constituency..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={selectedState} onValueChange={setSelectedState}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select State" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All States</SelectItem>
-                    {states.map(state => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Candidates Table */}
-        <Card className="indian-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center text-xl text-gradient">
-                <User className="h-5 w-5 mr-2 text-primary" />
-                उम्मीदवार ({filteredCandidates.length}) | Candidates ({filteredCandidates.length})
-              </CardTitle>
-              <Badge variant="outline" className="shadow-sm">
-                {candidates.length} Total Candidates
+        {/* Candidates Grid */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold flex items-center">
+              <User className="h-6 w-6 mr-2 text-primary" />
+              Featured Candidates
+            </h2>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="text-lg py-1 px-3 shadow-sm">
+                {candidates.length} Candidates
               </Badge>
+              <Button 
+                asChild 
+                variant="default" 
+                size="sm" 
+                className="bg-primary hover:bg-primary-glow text-black dark:text-white"
+              >
+                <Link to="/candidates">
+                  View All Candidates
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Candidate</TableHead>
-                    <TableHead>Party</TableHead>
-                    <TableHead>Constituency</TableHead>
-                    <TableHead>Experience</TableHead>
-                    <TableHead>Manifesto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCandidates.map((candidate, index) => (
-                    <TableRow key={index} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary-light/10 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-foreground">
-                              {candidate.name}
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {candidate.state}
-                            </div>
-                          </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {candidates.map((candidate, index) => (
+              <Card 
+                key={index} 
+                className="overflow-hidden hover:shadow-lg transition-shadow duration-300 
+                           indian-card dark:bg-gray-800 dark:border-gray-700"
+              >
+                <div className={`h-2 ${candidate.party_color}`}></div>
+                <CardContent className="p-0">
+                  <div className="p-6">
+                    <div className="flex items-start space-x-4 mb-4">
+                      <div className="relative">
+                        <img 
+                          src={candidate.profile} 
+                          alt={candidate.name}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                        />
+                        <div 
+                          className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full 
+                                      ${candidate.party_color} border-2 border-white dark:border-gray-800`}
+                        ></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold truncate dark:text-white">
+                          {candidate.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground flex items-center dark:text-gray-300">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {candidate.constituency}, {candidate.state}
+                        </p>
+                        <div className="flex items-center mt-1">
+                          <div className={`w-3 h-3 rounded-full mr-2 ${candidate.party_color}`}></div>
+                          <span className="text-sm font-medium dark:text-gray-200">
+                            {candidate.party}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-3 h-3 rounded-full ${candidate.party_color}`}></div>
-                          <span className="font-medium">{candidate.party}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {candidate.constituency}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Award className="h-4 w-4 text-accent" />
-                          <span>{candidate.experience}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm" className="group tricolor-border hover:bg-primary-light/10">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          घोषणापत्र | Manifesto
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {filteredCandidates.length === 0 && (
-              <div className="text-center py-8">
-                <div className="text-muted-foreground mb-4">
-                  No candidates found matching your search criteria.
-                </div>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedState("all");
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="flex items-center text-sm dark:text-gray-300">
+                        <Award className="h-4 w-4 mr-1 text-accent" />
+                        <span>{candidate.experience}</span>
+                      </div>
+                      <div className="flex items-center text-sm dark:text-gray-300">
+                        <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
+                        <span>{candidate.age} years</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold mb-1 flex items-center dark:text-gray-200">
+                        <FileText className="h-4 w-4 mr-1" />
+                        Education
+                      </h4>
+                      <p className="text-sm dark:text-gray-300">{candidate.education}</p>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold mb-1 dark:text-gray-200">
+                        Previous Position
+                      </h4>
+                      <p className="text-sm dark:text-gray-300">{candidate.previousPosition}</p>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold mb-1 dark:text-gray-200">
+                        Key Achievements
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {candidate.achievements.map((achievement, i) => (
+                          <Badge 
+                            key={i} 
+                            variant="secondary" 
+                            className="text-xs dark:bg-gray-700 dark:text-gray-200"
+                          >
+                            {achievement}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center mt-4 pt-4 border px-6 pb-6 dark:border-gray-700">
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="tricolor-border bg-white text-black hover:text-black hover:bg-gray-100
+                                 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Manifesto
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

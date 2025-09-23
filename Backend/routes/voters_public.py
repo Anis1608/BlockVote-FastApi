@@ -1,15 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks , Request, Body, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks , Body, File, Query, UploadFile, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database.db import get_db
-from middleware.security import access_check_for_admin
-from ua_parser import user_agent_parser
 from dotenv import load_dotenv
 from database.db import redis_client
 from utils.otp_on_email import  generate_otp, send_otp_email, verify_otp, store_otp_in_redis
 from utils.voter_card_sending_queue import enqueue_voter_card_email
 from sqlalchemy import text
-from utils.send_voting_card import send_voter_card_email
 from utils.id_generator import generateIdForVoters
 import cloudinary.uploader
 
@@ -155,6 +152,40 @@ async def get_voter_details(voter_id: str, db: Session = Depends(get_db)):
         return {"voter": voter}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+# display all candidates details from there ids
+
+@router.get("/candidates/details/{candidate_state}")
+async def get_candidates_details(candidate_state: str, db: Session = Depends(get_db)):
+    try:
+        if not candidate_state:
+            raise HTTPException(status_code=400, detail="Candidate states required")
+        
+        cache_key = f"candidates_in_{candidate_state}"
+        cached_data = redis_client.get(cache_key)
+        if cached_data:
+            print("data from redis cache")
+            return {"candidates": eval(cached_data)}
+        
+        print("candidate_state", candidate_state)
+
+        candidates = db.execute(
+            text("SELECT  name,  profile_picture , qualification  , candidate_age ,  party_name , experience,  previous_positions,  achievements, candidate_state , candidate_city ,  candidate_district, manifesto  FROM candidate WHERE candidate_state = (:candidate_state)"),
+            {"candidate_state": candidate_state}
+        ).mappings().fetchall()
+
+        if not candidates:
+            raise HTTPException(status_code=404, detail="No candidates found for the specified state")
+        
+        redis_client.setex(cache_key, 60, str([dict(row) for row in candidates]))
+
+        return {"candidates": candidates}
+    except Exception as e:
+        print("error aaya hai", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 # @router.post("/voter/register_request")

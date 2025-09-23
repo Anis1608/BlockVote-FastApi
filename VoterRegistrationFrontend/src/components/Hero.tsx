@@ -1,16 +1,10 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Shield, Users, Eye, ArrowRight, Flag } from "lucide-react";
-import { RegisterVoterForm } from "@/components/forms/RegisterVoterForm";
-import { UpdateVoterForm } from "@/components/forms/UpdateVoterForm";
-import { ViewVoterForm } from "@/components/forms/ViewVoterForm";
 import heroImage from "@/assets/india-voting-hero.jpg";
 import indianFlag from "@/assets/indian-flag.jpg";
+import { Link } from "react-router-dom";
 
 export function Hero() {
-  const [activeDialog, setActiveDialog] = useState<string | null>(null);
-
   return (
     <section
       id="home"
@@ -66,43 +60,31 @@ export function Hero() {
           </p>
 
           {/* Action Buttons */}
-         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Dialog open={activeDialog === "register"} onOpenChange={(open) => setActiveDialog(open ? "register" : null)}>
-              <DialogTrigger asChild>
-                <Button className="btn-hero w-full sm:w-auto">
-                  <Users className="mr-2 h-5 w-5" />
-                  Register for Voter ID
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <RegisterVoterForm />
-              </DialogContent>
-            </Dialog>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            <Link to="/register">
+              <Button className="btn-hero w-full sm:w-auto">
+                <Users className="mr-2 h-5 w-5" />
+                Register for Voter ID
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
 
-            <Dialog open={activeDialog === "update"} onOpenChange={(open) => setActiveDialog(open ? "update" : null)}>
-              <DialogTrigger asChild>
-                <Button className="btn-secondary-hero w-full sm:w-auto">
-                  <Shield className="mr-2 h-5 w-5" />
-                  Update Voter ID
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <UpdateVoterForm />
-              </DialogContent>
-            </Dialog>
+            <Link to="/update">
+              <Button className="btn-secondary-hero w-full sm:w-auto">
+                <Shield className="mr-2 h-5 w-5" />
+                Update Voter ID
+              </Button>
+            </Link>
 
-            <Dialog open={activeDialog === "view"} onOpenChange={(open) => setActiveDialog(open ? "view" : null)}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-auto border-2 hover:bg-accent-light/10">
-                  <Eye className="mr-2 h-5 w-5" />
-                  View Voter Details
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <ViewVoterForm />
-              </DialogContent>
-            </Dialog>
+            <Link to="/view">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto border-2 hover:bg-accent-light/10"
+              >
+                <Eye className="mr-2 h-5 w-5" />
+                View Voter Details
+              </Button>
+            </Link>
           </div>
 
           {/* Stats */}

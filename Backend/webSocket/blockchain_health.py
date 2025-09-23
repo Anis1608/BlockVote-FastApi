@@ -4,11 +4,9 @@ import time
 from fastapi import FastAPI, WebSocket
 from web3 import Web3
 from web3.middleware.proof_of_authority import ExtraDataToPOAMiddleware
-import os
 
-# -------------------------------
 # Web3 Setup
-# -------------------------------
+
 HTTP_URL = "https://api.avax.network/ext/bc/C/rpc"
 WSS_URL  = "wss://api.avax.network/ext/bc/C/ws"
 
@@ -22,9 +20,8 @@ last_block_time = None
 expected_block_interval = 2
 health_percentage = 100
 
-# -------------------------------
 # Blockchain Health Listener
-# -------------------------------
+
 async def block_listener():
     global last_block_time, health_percentage
 
@@ -52,7 +49,6 @@ async def block_listener():
 
                 latest_block = current_block
 
-            # If no new block for long, decrease health
             if last_block_time:
                 delay = time.time() - last_block_time
                 if delay > expected_block_interval * 2:
@@ -66,9 +62,8 @@ async def block_listener():
             print("Listener error:", e)
             await asyncio.sleep(5)
 
-# -------------------------------
+
 # FastAPI + WebSocket
-# -------------------------------
 def register_websocket(app: FastAPI):
     @app.on_event("startup")
     async def start_listener():

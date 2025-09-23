@@ -1,5 +1,6 @@
 import { Vote, Twitter, Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
@@ -12,7 +13,7 @@ export function Footer() {
               <div className="p-2 bg-gradient-primary rounded-lg">
                 <Vote className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-gradient">BlockVote</span>
+              <span className="text-xl font-bold text-gradient">BlockVote India</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Revolutionizing democracy through secure, transparent, and blockchain-powered voting systems. 
@@ -49,14 +50,14 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#elections" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/elections" className="text-muted-foreground hover:text-primary transition-colors">
                   Elections
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#candidates" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/candidates" className="text-muted-foreground hover:text-primary transition-colors">
                   Candidates
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -102,7 +103,7 @@ export function Footer() {
               </div>
               <div className="flex items-center space-x-3 text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span className="text-sm">New Delhi, India</span>
+                <span className="text-sm">Pune, India</span>
               </div>
             </div>
           </div>
@@ -112,7 +113,7 @@ export function Footer() {
         <div className="border-t border-border mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground text-sm">
-              © 2024 BlockVote. All rights reserved. Empowering democracy through blockchain technology.
+              © 2025 BlockVote. All rights reserved. Empowering democracy through blockchain technology.
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <span className="text-xs text-muted-foreground">Secured by</span>

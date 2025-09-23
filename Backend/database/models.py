@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import JSON, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from .db import Base  # Import Base from your db.py
 from sqlalchemy.sql import func
 class SuperAdmin(Base):
@@ -65,6 +64,9 @@ class Candidate(Base):
     qualification = Column(String(255), nullable=False)
     candidate_age = Column(Integer, nullable=False)
     party_name = Column(String(100), nullable=False)
+    experience = Column(String(500), nullable=True)
+    previous_positions = Column(String(500), nullable=True)
+    achievements = Column(JSON, nullable=True)
     candidate_state = Column(String(100), nullable=False , index=True)
     candidate_city = Column(String(100), nullable=False)
     candidate_district = Column(String(100), nullable=False)

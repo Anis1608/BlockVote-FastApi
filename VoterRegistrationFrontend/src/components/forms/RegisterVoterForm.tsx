@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { User, Phone, MapPin, Calendar, IdCard } from "lucide-react";
+import { Footer } from "../Footer";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:9000";
 
@@ -165,6 +166,7 @@ export function RegisterVoterForm() {
   };
 
   return (
+    <>
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="flex items-center justify-center gap-2 text-2xl">
@@ -495,5 +497,7 @@ export function RegisterVoterForm() {
         </form>
       </CardContent>
     </Card>
+    <Footer />
+     </>
   );
 }

@@ -1,7 +1,8 @@
-# enqueue.py
-import redis
 import json
 from database.db import redis_client
+import time
+from database.db import redis_client
+from utils.send_voting_card import send_voter_card_email
 
 QUEUE_NAME = "mail-queue"
 def enqueue_voter_card_email(voter_id, name, father_name, voter_dob, profile_picture, signature, email):
@@ -18,16 +19,10 @@ def enqueue_voter_card_email(voter_id, name, father_name, voter_dob, profile_pic
         "email": email
     }
     
-    # Ensure we're storing as string, not double-encoded
     redis_client.rpush(QUEUE_NAME, json.dumps(payload))
     queue_length = redis_client.llen(QUEUE_NAME)
     return {"status": "queued", "queue_position": queue_length}
-# process.py
-import redis
-import json
-import time
-from database.db import redis_client
-from utils.send_voting_card import send_voter_card_email
+# process.p
 
 QUEUE_NAME = "mail-queue"
 def process_voter_card_emails():
@@ -37,14 +32,13 @@ def process_voter_card_emails():
     print("Starting simple email processor...")
 
     while True:
-        payload = redis_client.lpop(QUEUE_NAME)  # FIFO pop
+        payload = redis_client.lpop(QUEUE_NAME)  
         if not payload:
             print("Queue empty. Waiting...")
             time.sleep(2)
             continue
 
         try:
-            # Handle both string and bytes payloads
             if isinstance(payload, bytes):
                 data = json.loads(payload.decode("utf-8"))
             else:

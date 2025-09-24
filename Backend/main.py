@@ -3,6 +3,7 @@ import uvicorn
 import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from webSocket import scannerdata_ws
 from database.db import Base, engine
 from routes.super_admin_routes import router as super_admin_router
 from routes.admin_routes import router as admin
@@ -44,6 +45,7 @@ app.include_router(super_admin_logs_router, prefix="/api", tags=["Super Admin Lo
 app.include_router(blockchain_monitor_router, prefix="/api", tags=["Blockchain Monitor"])
 app.include_router(voters_public_router, prefix="/api", tags=["voter"])
 # app.include_router(scanner_ws.router)   # WebSocket for Scanner
+app.include_router(scannerdata_ws.router)
 
 # health_ws.register_websocket(app)
 

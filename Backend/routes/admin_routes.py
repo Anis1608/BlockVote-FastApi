@@ -106,7 +106,7 @@ async def verify_admin_login_otp(
     user_agent = request.headers.get("user-agent")
     device_id = request.headers.get("device-id") or str(uuid4())
 
-    valid = verify_otp(f"login:{email}", otp , "login")
+    valid = await verify_otp(email, otp , "login")
     if not valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
@@ -218,7 +218,6 @@ async def register_candidate(
     if existing_candidate:
         raise HTTPException(status_code=400, detail="Candidate with this Aadhaar and email already exists")
 
-    # Generate new candidate ID
     candidate_id = generateIdForCandidate()
 
     candidate_state = admin_data['admin_of_state']

@@ -1,6 +1,4 @@
-from socket import socket
 import uvicorn
-import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from webSocket import scannerdata_ws
@@ -13,13 +11,12 @@ from routes.election_routes import router as election_router
 from routes.blockchain_monitor_routes import router as blockchain_monitor_router 
 from routes.super_admin_logs_routes import router as super_admin_logs_router
 from routes.voters_public import router as voters_public_router
-from utils.voter_card_sending_queue import process_voter_card_emails
-Base.metadata.create_all(bind=engine)
-app = FastAPI(title="PostgreSQL API")
+from routes.scanner_routes import router as qr_scanner_routes
 import webSocket.blockchain_health as health_ws
-import webSocket.scanner_ws as scanner_ws
 
-# ✅ Add CORS Middleware
+app = FastAPI(title="PostgreSQL API")
+Base.metadata.create_all(bind=engine)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # You can restrict this to ["http://localhost:3000"] later
@@ -28,14 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# @app.on_event("startup")  # FastAPI <0.100 (ya lifespan for new versions)
-# def start_queue_processor():
-#     # Thread me run karo taaki API block na ho
-#     threading.Thread(target=process_voter_card_emails, daemon=True).start()
-#     print("Email queue processor started in background")
-
-# Routers
 app.include_router(super_admin_router, prefix="/api", tags=["Super Admin"])
 app.include_router(admin, prefix="/api", tags=["Admin"])
 app.include_router(cast_vote_router, prefix="/api", tags=["Cast Vote"])
@@ -44,9 +33,10 @@ app.include_router(election_router, prefix="/api", tags=["Election_router"])
 app.include_router(super_admin_logs_router, prefix="/api", tags=["Super Admin Logs"])
 app.include_router(blockchain_monitor_router, prefix="/api", tags=["Blockchain Monitor"])
 app.include_router(voters_public_router, prefix="/api", tags=["voter"])
-# app.include_router(scanner_ws.router)   # WebSocket for Scanner
-app.include_router(scannerdata_ws.router)
+app.include_router(qr_scanner_routes , prefix="/api" , tags=["Scanner"])
 
+# websocket connection 
+app.include_router(scannerdata_ws.router)
 # health_ws.register_websocket(app)
 
 

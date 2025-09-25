@@ -9,7 +9,8 @@ import NotFound from "./pages/NotFound";
 import CandidatesPage from "./pages/CandidatesPage";
 import { RegisterVoterForm } from "./pages/RegisterVoter";
 import { ViewVoterForm } from "./pages/ViewVoterPage";
-import VotePage from "./pages/sample";
+import { UpdateVoterForm } from "./pages/UpdateVoterPage";
+// import VotePage from "./pages/sample";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,8 @@ const App = () => (
             <Route path="/candidates" element={<CandidatesPage />} />
             <Route path="/register" element={<RegisterVoterForm />} />
             <Route path="/view" element={<ViewVoterForm />} />
-            <Route path="/vote" element={<VotePage />} />
+            <Route path="/update" element={<UpdateVoterForm/>} />
+            {/* <Route path="/vote" element={<VotePage />} /> */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

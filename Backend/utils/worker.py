@@ -12,6 +12,3 @@ def run_worker():
         worker.work(with_scheduler=True)
         print("Worker started, waiting for jobs...")
 
-# if __name__ == "__main__":
-#     print("Worker started, waiting for jobs...")
-#     run_worker()

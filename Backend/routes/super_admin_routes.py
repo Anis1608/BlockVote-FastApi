@@ -168,21 +168,17 @@ async def verify_login_otp(
     if not email or not otp:
         raise HTTPException(status_code=400, detail="Email and OTP are required")
 
-    # Headers for device tracking
     user_agent = request.headers.get("user-agent")
     device_id = request.headers.get("device-id") or str(uuid4())
 
-    # Verify OTP
-    valid = verify_otp(f"login:{email}", otp, "login")
+    valid = await verify_otp(email, otp, "login")
     if not valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
-    # Get super_admin_id from Redis (temp store)
     admin_id = redis_client.get(f"temp:login:{email}")
     if not admin_id:
         raise HTTPException(status_code=400, detail="Session expired")
 
-    # Validate admin in DB
     check_admin = db.execute(
         text("SELECT * FROM super_admin WHERE super_admin_id = :id"),
         {"id": admin_id}
@@ -191,7 +187,6 @@ async def verify_login_otp(
     if not check_admin:
         raise HTTPException(status_code=400, detail="Admin Not Found")
 
-    # Device info (optional logging)
     parsed_info = user_agent_parser.Parse(user_agent)
     device_info = {
         "os": f"{parsed_info['os']['family']} {parsed_info['os']['major'] or ''}",
@@ -199,23 +194,20 @@ async def verify_login_otp(
         "platform": parsed_info["device"]["family"]
     }
 
-    # Create JWT
     payload = {
         "id": check_admin.super_admin_id,
         "iat": int(time.time())
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-    # Save session in Redis
     redis_key = f"session:{check_admin.super_admin_id}:{device_id}"
     redis_client.setex(redis_key, SESSTION_TTL, token)
     redis_client.setex(f"device-info:{check_admin.super_admin_id}:{device_id}", SESSTION_TTL, json.dumps(device_info))
 
-    # Cleanup OTP keys
     redis_client.delete(f"otp:login:{email}")
     redis_client.delete(f"temp:login:{email}")
 
-    # ✅ Set cookies
+
     response = JSONResponse({
         "message": "SuperAdmin Logged In Successfully!",
         "Success": True,
@@ -225,7 +217,7 @@ async def verify_login_otp(
         key="access_token",
         value=token,
         httponly=True,
-        secure=True,       # set True in production (HTTPS required)
+        secure=True,      
         samesite="Strict",
         max_age=SESSTION_TTL
     )
@@ -244,7 +236,7 @@ async def verify_login_otp(
 # get super admin 
 @router.get("/super_admin/get-details")
 async def get_super_admin(
-    admin: SuperAdmin = Depends(access_check),  # Ensure super admin is authenticated
+    admin: SuperAdmin = Depends(access_check),  
     db: Session = Depends(get_db)
 ):
     return {
@@ -268,20 +260,18 @@ async def get_super_admin(
 @router.post("/super_admin/create-admin")
 async def create_admin(
     admin_data: SuperAdminCreatesAdmin,
-    admin: SuperAdmin = Depends(access_check),  # Ensure super admin is authenticated
+    admin: SuperAdmin = Depends(access_check), 
     db: Session = Depends(get_db)
 ):
     try:
-        # Step 1: Generate a new wallet for the Admin
+
         new_acct = w3.eth.account.create()
         encrypted_pk = encrypt_private_key(new_acct.key.hex())  
-        tx_hash = send_avax(new_acct.address, 0.3)  # Fund wallet with AVAX
+        tx_hash = send_avax(new_acct.address, 0.3) 
 
-        # Step 2: Hash password
         hashed_password = hash_password(admin_data.password)
         admin_id = generateIdForAdmin()
 
-        # Step 3: Insert into DB
         db.execute(
             text("""
                 INSERT INTO admin (admin_id, name, email, password, election_id, wallet_address, wallet_secret, admin_of_state)
@@ -312,8 +302,6 @@ async def create_admin(
         )
         db.commit()
 
-        # Step 4: Register this admin on blockchain (superadmin calls the contract)
-        # Step 4: Register this admin on blockchain
         superadmin_address = os.getenv("PUBLIC_ADDRESS_SUPER_ADMIN")
         superadmin_private_key = os.getenv("PRIVATE_KEY_SUPER_ADMIN")
 
@@ -339,7 +327,6 @@ async def create_admin(
 
     except Exception as e:
         db.rollback()
-        # Yaha pe log insert karo failed ke saath
         try:
             db.execute(
                 text("""
@@ -355,13 +342,13 @@ async def create_admin(
             )
             db.commit()
         except:
-            db.rollback()  # agar logging bhi fail ho jaye toh crash na kare
+            db.rollback() 
 
         raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
-    
+
+
+
 # superadmin get all candidates using state passing as query parameter
-
-
 @router.get("/super_admin/candidates")
 def get_candidates_by_state(
     db: Session = Depends(get_db),
@@ -369,10 +356,8 @@ def get_candidates_by_state(
     redis: redis.Redis = Depends(get_redis)
 ):
     try:
-        # Create a unique cache key per admin
         cache_key = f"superadmin:{admin.super_admin_id}:candidates"
 
-        # Check cache
         cached_data = redis.get(cache_key)
         if cached_data:
             candidates = json.loads(cached_data)
@@ -382,7 +367,6 @@ def get_candidates_by_state(
                 "data": candidates
             }
 
-        # Fetch candidates from DB
         query = text("SELECT * FROM candidate")
         result = db.execute(query).mappings().fetchall()
         if not result:
@@ -390,7 +374,6 @@ def get_candidates_by_state(
 
         candidates = [dict(row) for row in result]
 
-        # Cache data with a TTL (30 seconds)
         redis.setex(cache_key, 30, json.dumps(candidates, default=json_serializer_for_time))
 
         return {"Success": True, "message": "Candidates fetched successfully", "data": candidates}
@@ -407,7 +390,6 @@ async def get_candidate_counts_by_state(
     admin=Depends(access_check)
 ):
     try:
-        # Define all 36 states/UTs
         labels = [
             'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
             'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
@@ -419,7 +401,6 @@ async def get_candidate_counts_by_state(
             'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
         ]
 
-        # Query to count candidates grouped by state
         query = text("""
             SELECT candidate_state, COUNT(*) as count 
             FROM candidate 
@@ -427,10 +408,8 @@ async def get_candidate_counts_by_state(
         """)
         result = db.execute(query).mappings().fetchall()
 
-        # Convert result to dict for quick lookup
         state_counts = {row['candidate_state']: row['count'] for row in result}
 
-        # Match counts to labels, default to 0 if state is missing
         data = [state_counts.get(state, 0) for state in labels]
 
         return {
@@ -447,17 +426,15 @@ async def get_candidate_counts_by_state(
 @router.get("/super_admin/all-admins")
 async def get_candidates_by_state(
     db: Session = Depends(get_db),
-    admin=Depends(access_check)  # Only superadmin access
+    admin=Depends(access_check)
 ):
     try:
-        # Fetch candidates for the given state
         query = text("SELECT  admin_id , name , email , profile_picture , admin_of_state FROM admin")
         result = db.execute(query).mappings().fetchall()
 
         if not result:
             return {"Success": True, "message": f"No Admis found", "data": []}
 
-        # Convert result to list of dicts
         admins = [dict(row) for row in result]
 
         return {"Success": True, "message": "Candidates fetched successfully", "data": admins}

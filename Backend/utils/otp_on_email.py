@@ -39,8 +39,8 @@ def store_otp_in_redis(email: str, otp: str, purpose: str, expiry: int = 300, at
 async def verify_otp(email: str, otp: str, purpose: str ):
     otp_key = f"otp:{purpose}:{email}"
     attempts_key = f"otp_attempts:{purpose}:{email}"
-
     stored = redis_client.get(otp_key)
+    
     if stored and stored == otp:
         with redis_client.pipeline() as pipe:
             pipe.delete(otp_key)

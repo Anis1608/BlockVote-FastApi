@@ -16,6 +16,7 @@ import {
 import digitalVoting from "@/assets/digital-voting.jpg";
 import parliamentImage from "@/assets/parliament-blockchain.jpg";
 import indianFlag from "@/assets/indian-flag.jpg";
+import { Link } from "react-router-dom";
 
 export function Features() {
   const features = [
@@ -25,7 +26,8 @@ export function Features() {
       description:
         "Create your secure blockchain-based voter identity with biometric verification and instant digital ID generation.",
       color: "text-primary",
-      bgColor: "bg-primary/10 dark:bg-primary/20", // ✅ brighter in dark mode
+      bgColor: "bg-primary/10 dark:bg-primary/20",
+      link:"/register"
     },
     {
       icon: RefreshCw,
@@ -33,7 +35,8 @@ export function Features() {
       description:
         "Seamlessly update your personal details, address, and voting preferences with real-time blockchain verification.",
       color: "text-secondary",
-      bgColor: "bg-secondary/10 dark:bg-secondary/20", // ✅ darker variant for contrast
+      bgColor: "bg-secondary/10 dark:bg-secondary/20",
+      link:"/update"
     },
     {
       icon: Search,
@@ -41,7 +44,8 @@ export function Features() {
       description:
         "Instantly access and verify voter information using secure blockchain lookup with complete privacy protection.",
       color: "text-accent",
-      bgColor: "bg-accent/10 dark:bg-accent/20", // ✅ visible on dark
+      bgColor: "bg-accent/10 dark:bg-accent/20",
+      link:"/view",                              
     },
   ];
 
@@ -124,7 +128,7 @@ export function Features() {
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span className="relative z-10 flex items-center">
-                    शुरू करें | Get Started
+                    <Link to ={feature.link} >शुरू करें | Get Started</Link>
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Button>

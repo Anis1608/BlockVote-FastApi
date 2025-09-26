@@ -1,6 +1,8 @@
+import threading
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from utils.voter_card_sending_queue import process_voter_card_emails
 from webSocket import scannerdata_ws
 from database.db import Base, engine
 from routes.super_admin_routes import router as super_admin_router
@@ -24,6 +26,12 @@ app.add_middleware(
     allow_methods=["*"],  # ["GET", "POST", "PUT", "DELETE"] if you want to restrict
     allow_headers=["*"],
 )
+
+@app.on_event("startup")  # FastAPI <0.100 (ya lifespan for new versions)
+def start_queue_processor():
+    # Thread me run karo taaki API block na ho
+    threading.Thread(target=process_voter_card_emails, daemon=True).start()
+    print("Email queue processor started in background")
 
 app.include_router(super_admin_router, prefix="/api", tags=["Super Admin"])
 app.include_router(admin, prefix="/api", tags=["Admin"])

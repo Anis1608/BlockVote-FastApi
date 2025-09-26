@@ -159,83 +159,44 @@ async def get_voter_details(voter_id: str, db: Session = Depends(get_db)):
 async def get_candidates_details(candidate_state: str, db: Session = Depends(get_db)):
     try:
         if not candidate_state:
-            raise HTTPException(status_code=400, detail="Candidate states required")
+            raise HTTPException(status_code=400, detail="Candidate state required")
         
+        # Special case for "all"
+        if candidate_state.lower() == "all":
+            cache_key = "candidates_all"
+            cached_data = redis_client.get(cache_key)
+            if cached_data:
+                print("data from redis cache (all)")
+                return {"candidates": eval(cached_data)}
+            
+            candidates = db.execute(
+                text("SELECT name, profile_picture, qualification, candidate_age, party_name, experience, previous_positions, achievements, candidate_state, candidate_city, candidate_district, manifesto FROM candidate")
+            ).mappings().fetchall()
+
+            if not candidates:
+                raise HTTPException(status_code=404, detail="No candidates found")
+            
+            redis_client.setex(cache_key, 60, str([dict(row) for row in candidates]))
+            return {"candidates": candidates}
+        
+        # For specific state
         cache_key = f"candidates_in_{candidate_state}"
         cached_data = redis_client.get(cache_key)
         if cached_data:
-            print("data from redis cache")
+            print(f"data from redis cache ({candidate_state})")
             return {"candidates": eval(cached_data)}
         
-        print("candidate_state", candidate_state)
-
         candidates = db.execute(
-            text("SELECT  name,  profile_picture , qualification  , candidate_age ,  party_name , experience,  previous_positions,  achievements, candidate_state , candidate_city ,  candidate_district, manifesto  FROM candidate WHERE candidate_state = (:candidate_state)"),
+            text("SELECT name, profile_picture, qualification, candidate_age, party_name, experience, previous_positions, achievements, candidate_state, candidate_city, candidate_district, manifesto FROM candidate WHERE candidate_state = (:candidate_state)"),
             {"candidate_state": candidate_state}
         ).mappings().fetchall()
 
         if not candidates:
-            raise HTTPException(status_code=404, detail="No candidates found for the specified state")
+            raise HTTPException(status_code=404, detail=f"No candidates found for {candidate_state}")
         
         redis_client.setex(cache_key, 60, str([dict(row) for row in candidates]))
-        
         return {"candidates": candidates}
+
     except Exception as e:
         print("error aaya hai", e)
         raise HTTPException(status_code=500, detail=str(e))
-    
-
-
-# # @router.put("/voter/update")
-# # async def update_voter(
-# #     aadhaar: str = Body(...),
-# #     name: str = Body(None),
-# #     email: str = Body(None),
-# #     profile_picture: str = Body(None),
-# #     voter_dob: str = Body(None),
-# #     voters_state: str = Body(None),
-# #     voters_city: str = Body(None),
-# #     voters_district: str = Body(None),
-# #     db: Session = Depends(get_db)
-# # ):
-# #     try:
-# #         # Check if voter exists
-# #         existing_voter = db.execute(
-# #             text("SELECT * FROM votertable WHERE aadhaar = :aadhaar"),
-# #             {"aadhaar": aadhaar}
-# #         ).mappings().fetchone()
-
-# #         if not existing_voter:
-# #             raise HTTPException(status_code=404, detail="Voter not found")
-        
-# #         # Prepare update query dynamically based on provided fields
-# #         update_fields = {}
-# #         if name: update_fields["name"] = name
-# #         if email: update_fields["email"] = email
-# #         if profile_picture: update_fields["profile_picture"] = profile_picture
-# #         if voter_dob: update_fields["voter_dob"] = voter_dob
-# #         if voters_state: update_fields["voters_state"] = voters_state
-# #         if voters_city: update_fields["voters_city"] = voters_city
-# #         if voters_district: update_fields["voters_district"] = voters_district
-        
-# #         if not update_fields:
-# #             raise HTTPException(status_code=123, detail="No fields provided for update")
-        
-# #         # Build SQL query
-# #         set_clause = ", ".join([f"{field} = :{field}" for field in update_fields])
-# #         update_fields["aadhaar"] = aadhaar  # Add voter_id for WHERE clause
-        
-        
-# #         db.execute(
-# #             text(f"UPDATE votertable SET {set_clause}, updated_at = NOW() WHERE aadhaar = :aadhaar"),
-# #             {"aadhaar" : aadhaar}
-# #             # update_fields
-# #         )
-# #         db.commit()
-
-# #         return {"message": "Voter updated successfully"}
-
-# #     except Exception as e:
-# #         db.rollback()
-# #         raise HTTPException(status_code=500, detail=str(e))
-

@@ -18,6 +18,7 @@ reportlab
 py-solc-x
 cloudinary
 python-multipart
+flask
 
 
 

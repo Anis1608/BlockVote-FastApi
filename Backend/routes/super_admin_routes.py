@@ -243,11 +243,11 @@ async def get_super_admin(
         "success": True,
         "message": "Super Admin fetched successfully",
         "data": {
-            "super_admin_id": admin.super_admin_id,
-            "email": admin.email,
-            "username": admin.username,
-            "created_at": admin.created_at,
-            "updated_at": admin.updated_at,
+            "super_admin_id": admin["super_admin_id"],
+            "email": admin["email"],
+            "username": admin["username"],
+            "created_at": admin["created_at"],
+            "updated_at": admin["updated_at"],
         }
     }
 

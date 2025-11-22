@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI Service
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: blockvote_backend
+    expose:
+      - "9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./Backend/.env
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Voter Registration Frontend
+  voter_frontend:
+    build:
+      context: ./VoterRegistrationFrontend
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: https://blockvote.backend.site
+    container_name: blockvote_voter_frontend
+    expose:
+      - "5173"
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+
+  # Admin Frontend
+  admin_frontend:
+    build:
+      context: ./AdminFrontend
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: https://blockvote.backend.site
+    container_name: blockvote_admin_frontend
+    expose:
+      - "5174"
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+
+  # Super Admin Frontend
+  super_admin_frontend:
+    build:
+      context: ./SuperAdminFrontend
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: https://blockvote.backend.site
+    container_name: blockvote_super_admin_frontend
+    expose:
+      - "5175"
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:latest
+    container_name: blockvote_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - voter_frontend
+      - admin_frontend
+      - super_admin_frontend
+
+networks:
+  blockvote_network:
+    driver: bridge

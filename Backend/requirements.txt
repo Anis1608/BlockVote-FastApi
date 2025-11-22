@@ -6,13 +6,13 @@ cryptography
 sqlalchemy
 psycopg2
 redis
-bcrypt
+bcrypt==3.2.0
 PyJWT
 yagmail
 pyyaml
 ua-parser
 user-agents
-passlib
+passlib==1.7.4
 qrcode[pil]
 reportlab
 py-solc-x

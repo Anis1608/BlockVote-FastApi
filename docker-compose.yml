@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI Service
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: blockvote_backend
+    ports:
+      - "9000:9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./Backend/.env
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+    volumes:
+      - ./Backend:/app
+
+  # Voter Registration Frontend
+  voter_frontend:
+    build:
+      context: ./VoterRegistrationFrontend
+      dockerfile: Dockerfile
+    container_name: blockvote_voter_frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Admin Frontend
+  admin_frontend:
+    build:
+      context: ./AdminFrontend
+      dockerfile: Dockerfile
+    container_name: blockvote_admin_frontend
+    ports:
+      - "5174:5174"
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Super Admin Frontend
+  super_admin_frontend:
+    build:
+      context: ./SuperAdminFrontend
+      dockerfile: Dockerfile
+    container_name: blockvote_super_admin_frontend
+    ports:
+      - "5175:5175"
+    networks:
+      - blockvote_network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+networks:
+  blockvote_network:
+    driver: bridge

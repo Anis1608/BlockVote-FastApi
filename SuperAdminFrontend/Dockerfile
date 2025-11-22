@@ -4,32 +4,35 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Accept build arguments for environment variables
-ARG VITE_BACKEND_URL=http://backend:9000
+ARG VITE_BACKEND_URL
 
-# Copy package files first
-COPY package.json bun.lockb ./
+# Make ARG available as ENV for Vite
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
-# Install dependencies using npm
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy entire project
+# Copy all project files
 COPY . .
 
-# Build the React + Vite project with environment variables
-RUN VITE_BACKEND_URL=${VITE_BACKEND_URL} npm run build
+# Build the app
+RUN npm run build
 
 # Stage 2: Runtime
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install serve to run the built app
+# Install serve to run production build
 RUN npm install -g serve
 
-# Copy built files from builder stage
+# Copy built files
 COPY --from=builder /app/dist ./dist
 
-# Expose port
+# Expose correct port
 EXPOSE 5175
 
 # Health check

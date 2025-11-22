@@ -3,38 +3,40 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Accept build arguments for environment variables
-ARG VITE_BACKEND_URL=http://backend:9000
+# Accept build arguments
+ARG VITE_BACKEND_URL
 
-# Copy package files first
-COPY package.json bun.lockb ./
+# Export to environment (Vite requires ENV)
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
-# Install dependencies using npm (since bun.lockb is present, bun would be ideal but npm works too)
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy entire project
+# Copy source code
 COPY . .
 
-# Build the TypeScript React + Vite project with environment variables
-RUN VITE_BACKEND_URL=${VITE_BACKEND_URL} npm run build
+# Build Vite project
+RUN npm run build
 
 # Stage 2: Runtime
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install serve to run the built app
+# Serve production build
 RUN npm install -g serve
 
-# Copy built files from builder stage
+# Copy built files
 COPY --from=builder /app/dist ./dist
 
-# Expose port
+# Correct port for this frontend
 EXPOSE 5173
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:5173 || exit 1
 
-# Start the application
 CMD ["serve", "-s", "dist", "-l", "5173"]

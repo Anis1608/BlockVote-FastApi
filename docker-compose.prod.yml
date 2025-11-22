@@ -29,7 +29,7 @@ services:
       context: ./VoterRegistrationFrontend
       dockerfile: Dockerfile
       args:
-        VITE_BACKEND_URL: https://blockvote.backend.site
+        VITE_BACKEND_URL: https://backend.blockvote.site
     container_name: blockvote_voter_frontend
     expose:
       - "5173"
@@ -43,7 +43,7 @@ services:
       context: ./AdminFrontend
       dockerfile: Dockerfile
       args:
-        VITE_BACKEND_URL: https://blockvote.backend.site
+        VITE_BACKEND_URL: https://backend.blockvote.site
     container_name: blockvote_admin_frontend
     expose:
       - "5174"
@@ -57,7 +57,7 @@ services:
       context: ./SuperAdminFrontend
       dockerfile: Dockerfile
       args:
-        VITE_BACKEND_URL: https://blockvote.backend.site
+        VITE_BACKEND_URL: https://backend.blockvote.site
     container_name: blockvote_super_admin_frontend
     expose:
       - "5175"

@@ -17,7 +17,10 @@ DOMAIN_VOTER="blockvote.voter.site"
 EMAIL="blockvoteindia@gmail.com"
 
 echo "📁 Setting up project directory..."
-if [ -d "$PROJECT_DIR" ]; then
+if [ -d "$PROJECT_DIR" ]; thencd /home/ubuntu
+git clone https://github.com/Anis1608/BlockVote-FastApi.git blockvote
+cd blockvote
+bash deploy.shcd /home/ubuntu && git clone https://github.com/Anis1608/BlockVote-FastApi.git blockvote && cd blockvote && bash deploy.sh
     echo "📤 Pulling latest code..."
     cd "$PROJECT_DIR"
     git pull origin master
@@ -36,6 +39,9 @@ echo "📝 Creating SSL directory..."
 mkdir -p ssl
 
 echo "🔐 Setting up SSL certificates with Let's Encrypt..."
+# Stop Nginx temporarily for cert generation
+sudo systemctl stop nginx || true
+sleep 2
 sudo certbot certonly --standalone \
   -d $DOMAIN_BACKEND \
   -d $DOMAIN_SUPERADMIN \
@@ -55,19 +61,19 @@ else
 fi
 
 echo "🐳 Stopping existing containers..."
-docker compose -f docker-compose.prod.yml down || true
+docker-compose -f docker-compose.prod.yml down || true
 
 echo "🏗️  Building Docker images (this may take 5-10 minutes)..."
-docker compose -f docker-compose.prod.yml build --no-cache
+docker-compose -f docker-compose.prod.yml build --no-cache
 
 echo "🚀 Starting services..."
-docker compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 echo "⏳ Waiting for services to start..."
 sleep 10
 
 echo "✅ Checking service status..."
-docker compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.prod.yml ps
 
 echo ""
 echo "════════════════════════════════════════════════════════"
@@ -81,13 +87,13 @@ echo "   👤 Admin:           https://$DOMAIN_ADMIN"
 echo "   🗳️  Voter Frontend:  https://$DOMAIN_VOTER"
 echo ""
 echo "📊 View logs:"
-echo "   docker compose -f docker-compose.prod.yml logs -f backend"
+echo "   docker-compose -f docker-compose.prod.yml logs -f backend"
 echo ""
 echo "🔄 Restart services:"
-echo "   docker compose -f docker-compose.prod.yml restart"
+echo "   docker-compose -f docker-compose.prod.yml restart"
 echo ""
 echo "📦 Stop services:"
-echo "   docker compose -f docker-compose.prod.yml down"
+echo "   docker-compose -f docker-compose.prod.yml down"
 echo ""
 echo "⚠️  Make sure DNS records point to EC2 IP: 13.232.7.247"
 echo ""

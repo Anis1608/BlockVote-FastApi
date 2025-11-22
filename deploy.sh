@@ -17,10 +17,7 @@ DOMAIN_VOTER="blockvote.voter.site"
 EMAIL="blockvoteindia@gmail.com"
 
 echo "📁 Setting up project directory..."
-if [ -d "$PROJECT_DIR" ]; thencd /home/ubuntu
-git clone https://github.com/Anis1608/BlockVote-FastApi.git blockvote
-cd blockvote
-bash deploy.shcd /home/ubuntu && git clone https://github.com/Anis1608/BlockVote-FastApi.git blockvote && cd blockvote && bash deploy.sh
+if [ -d "$PROJECT_DIR" ]; then
     echo "📤 Pulling latest code..."
     cd "$PROJECT_DIR"
     git pull origin master

@@ -1,30 +1,104 @@
 # BlockVote - Secure Blockchain-Based Election System
 
-BlockVote is a comprehensive, secure, and transparent election management system built on blockchain technology. It ensures the integrity of the voting process, from voter registration to the final tally.
+**BlockVote** is a state-of-the-art, decentralized electronic voting system designed to ensure transparency, security, and integrity in elections. Built with a modern tech stack, it leverages blockchain technology to make votes immutable and verifiable, while providing distinct interfaces for voters, election administrators, and super administrators.
 
-## 🚀 Project Overview
+---
 
-The system consists of a robust backend and three distinct frontend applications tailored for different user roles:
+## 🏗️ System Architecture
 
-*   **Backend**: A high-performance FastAPI (Python) application handling business logic, database interactions (PostgreSQL), and blockchain integration (Web3.py).
-*   **Voter Registration Frontend**: A public-facing portal for voters to register and verify their identity.
-*   **Admin Frontend**: A dashboard for election officials to manage specific elections, candidates, and voters.
-*   **Super Admin Frontend**: A master control panel for overseeing the entire system, managing admins, and global settings.
+The BlockVote ecosystem is composed of four main components working in harmony:
 
-## 📂 Project Structure
+1.  **Backend Core**: The central nervous system handling API requests, database management, and blockchain transactions.
+2.  **Super Admin Portal**: For high-level system configuration and management of election officials.
+3.  **Admin Dashboard**: For managing specific elections, candidates, and monitoring polling stations.
+4.  **Voter Registration Portal**: A public gateway for citizens to register and verify their eligibility.
 
-```
-BlockVote/
-├── Backend/                 # FastAPI Backend Application
-├── AdminFrontend/           # React Admin Dashboard
-├── SuperAdminFrontend/      # React Super Admin Dashboard
-├── VoterRegistrationFrontend/ # React Voter Registration Portal
-├── AWS_DEPLOYMENT_GUIDE.md  # Detailed AWS Deployment Instructions
-├── DOCKER_SETUP.md          # Docker & Docker Compose Setup Guide
-├── deploy.sh                # Deployment Script
-├── docker-compose.yml       # Docker Compose Configuration
-└── ...
-```
+---
+
+## 🚀 Key Features
+
+*   **Blockchain Security**: Every vote is recorded on a blockchain (Ethereum/Polygon compatible), ensuring it cannot be tampered with or deleted.
+*   **Role-Based Access Control (RBAC)**: Distinct permissions for Super Admins, Admins, and Voters.
+*   **Real-Time Monitoring**: Live tracking of voter turnout, device status, and election progress via WebSockets.
+*   **Secure Authentication**: JWT-based session management with encrypted passwords (Bcrypt).
+*   **Device Management**: Control and monitor polling devices (EVMs) remotely.
+*   **Automated Communication**: Email notifications for voter registration status and election updates.
+*   **Smart Contract Integration**: Automated vote tallying and result declaration using Solidity smart contracts.
+
+---
+
+## 💻 Technology Stack
+
+### Backend (`/Backend`)
+*   **Framework**: FastAPI (Python) - High performance, easy to use.
+*   **Database**: PostgreSQL - Robust relational database for user data and logs.
+*   **ORM**: SQLAlchemy - For efficient database interactions.
+*   **Blockchain**: Web3.py - Python library for interacting with Ethereum nodes.
+*   **Real-time**: WebSockets - For live data streaming to dashboards.
+*   **Caching**: Redis - For session storage and background task queues.
+*   **Utilities**:
+    *   `yagmail`: Email sending service.
+    *   `qrcode`: Generating voter slips/IDs.
+    *   `reportlab`: PDF generation for voter ID cards.
+    *   `cloudinary`: Cloud storage for candidate images and documents.
+
+### Frontend Applications (`/AdminFrontend`, `/SuperAdminFrontend`, `/VoterRegistrationFrontend`)
+All three frontends share a modern, responsive tech stack:
+*   **Framework**: React.js (via Vite)
+*   **Language**: TypeScript - For type-safe, maintainable code.
+*   **Styling**: Tailwind CSS - Utility-first CSS framework.
+*   **UI Components**: shadcn/ui & Radix UI - Accessible, high-quality components.
+*   **State Management**: TanStack Query (React Query) - Efficient server state management.
+*   **Forms**: React Hook Form + Zod - Schema validation and form handling.
+*   **Charts**: Recharts & Chart.js - Visualizing election data.
+*   **Icons**: Lucide React.
+
+### DevOps & Infrastructure
+*   **Containerization**: Docker & Docker Compose.
+*   **Web Server**: Nginx (Reverse Proxy).
+*   **Deployment**: AWS EC2 ready (with detailed guides).
+
+---
+
+## 📂 Component Details
+
+### 1. Backend API
+Located in `Backend/`, this is the engine of BlockVote.
+*   **Routes**:
+    *   `/api/super-admin`: Manage admins and system logs.
+    *   `/api/admin`: Election creation, candidate nomination, device setup.
+    *   `/api/cast-vote`: Secure vote casting endpoints.
+    *   `/api/public`: Public election data.
+    *   `/api/scanner`: QR code scanner integration for polling stations.
+*   **WebSockets**: Dedicated channels for `scannerdata` and `blockchain_health`.
+
+### 2. Super Admin Frontend
+Located in `SuperAdminFrontend/`.
+*   **Target User**: Election Commission / System Owners.
+*   **Capabilities**:
+    *   Create and manage Admin accounts.
+    *   View global system logs and audit trails.
+    *   Monitor overall system health and blockchain connectivity.
+
+### 3. Admin Frontend
+Located in `AdminFrontend/`.
+*   **Target User**: Election Officers / Constituency Managers.
+*   **Capabilities**:
+    *   **Dashboard**: Visual analytics of active elections.
+    *   **Candidate Management**: Add/Edit candidates with profiles and symbols.
+    *   **Voter Management**: Verify and approve voter registrations.
+    *   **Device Management**: Authorize and monitor polling devices.
+    *   **Election Control**: Start/Stop election phases.
+
+### 4. Voter Registration Frontend
+Located in `VoterRegistrationFrontend/`.
+*   **Target User**: General Public (Voters).
+*   **Capabilities**:
+    *   New Voter Registration form.
+    *   Application Status tracking.
+    *   Download Voter ID Card (PDF).
+
+---
 
 ## 📸 Screenshots
 
@@ -46,86 +120,71 @@ Monitor and manage connected polling devices and active sessions.
 User profile settings and role information.
 ![Profile](screenshots/profile.png)
 
-## 🛠️ Prerequisites
+---
 
-*   **Node.js** (v18+ recommended)
-*   **Python** (v3.9+)
-*   **Docker** & **Docker Compose**
-*   **PostgreSQL**
-*   **Redis**
+## 🛠️ Setup & Installation
 
-## ⚡ Quick Start (Local Development)
+### Prerequisites
+*   Node.js (v18+)
+*   Python (v3.9+)
+*   Docker & Docker Compose (Recommended)
+*   PostgreSQL & Redis (if running locally without Docker)
 
-### 1. Backend Setup
+### Option A: Running with Docker (Recommended)
+The easiest way to spin up the entire stack.
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/Anis1608/BlockVote-FastApi.git
+cd BlockVote
+
+# 2. Build and start services
+docker-compose up -d --build
+
+# 3. Access the applications
+# Backend: http://localhost:9000
+# Voter Portal: http://localhost:5173
+# Admin Dashboard: http://localhost:5174
+# Super Admin Dashboard: http://localhost:5175
+```
+
+### Option B: Manual Local Setup
+
+#### 1. Backend Setup
+```bash
 cd Backend
-# Create virtual environment (optional but recommended)
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+# Activate venv (Windows: venv\Scripts\activate, Mac/Linux: source venv/bin/activate)
 pip install -r requirements.txt
-
-# Run the server
+# Ensure .env is configured with DB and Redis credentials
 uvicorn main:app --host 0.0.0.0 --port 9000 --reload
 ```
 
-### 2. Frontend Setup
-
-You can run each frontend independently. Open separate terminals for each:
-
-**Admin Frontend:**
+#### 2. Frontend Setup (Repeat for each frontend folder)
 ```bash
-cd AdminFrontend
+cd AdminFrontend  # or SuperAdminFrontend, VoterRegistrationFrontend
 npm install
 npm run dev
 ```
 
-**Super Admin Frontend:**
-```bash
-cd SuperAdminFrontend
-npm install
-npm run dev
-```
-
-**Voter Registration Frontend:**
-```bash
-cd VoterRegistrationFrontend
-npm install
-npm run dev
-```
-
-## 🐳 Running with Docker
-
-For a consistent environment, use Docker Compose to run all services simultaneously.
-
-```bash
-# Build and start all services
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f
-```
-
-*   **Backend**: http://localhost:9000
-*   **Voter Registration**: http://localhost:5173
-*   **Admin Frontend**: http://localhost:5174
-*   **Super Admin Frontend**: http://localhost:5175
+---
 
 ## ☁️ Deployment
 
-This project is cloud-ready. Refer to the included guides for detailed deployment instructions:
+Detailed deployment guides are included in the repository:
 
-*   **[AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md)**: Step-by-step instructions for deploying to AWS EC2 using Docker, Nginx, and SSL.
-*   **[Docker Setup Guide](DOCKER_SETUP.md)**: Detailed Docker configuration and troubleshooting.
-
-## 🔒 Security Features
-
-*   **Blockchain Integration**: Immutable record of votes.
-*   **JWT Authentication**: Secure session management.
-*   **Role-Based Access Control (RBAC)**: Strict separation of duties between Super Admins, Admins, and Voters.
-*   **Encrypted Data**: Sensitive voter data is encrypted at rest and in transit.
+*   📄 **[AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md)**: Complete walkthrough for deploying to AWS EC2 with Nginx, SSL, and Domain configuration.
+*   🐳 **[Docker Setup Guide](DOCKER_SETUP.md)**: In-depth Docker configuration details.
 
 ---
-*Powered by BlockVote India*
+
+## 🔒 Security Measures
+
+*   **Immutable Ledger**: Votes are stored on the blockchain, making them tamper-proof.
+*   **End-to-End Encryption**: All sensitive data transmission is encrypted.
+*   **JWT Authentication**: Stateless and secure session handling.
+*   **Input Validation**: Strict validation using Pydantic (Backend) and Zod (Frontend) to prevent injection attacks.
+
+---
+
+*Developed for a transparent and secure democratic process.*
